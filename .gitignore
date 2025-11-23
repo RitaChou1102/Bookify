@@ -1,0 +1,42 @@
+# Laravel
+/vendor/
+/node_modules/
+.env
+.env.*.backup
+.env.local
+/storage/*.key
+/storage/logs/*.log
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/public/storage
+
+# Composer
+/vendor/
+composer.lock
+
+# NPM / Yarn
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/mysql/
+docker/*/data
+*.pid
+
+# Logs
+*.log
+*.cache
