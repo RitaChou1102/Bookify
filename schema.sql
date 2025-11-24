@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS `order_details` (
   KEY `idx_orderdetails_order` (`order_id`),
   KEY `idx_orderdetails_book` (`book_id`),
   CONSTRAINT `fk_orderdetails_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`order_id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_orderdetails_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`book_id`) ON DELETE SET NULL
+  CONSTRAINT `fk_orderdetails_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`book_id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Reviews
