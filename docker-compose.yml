@@ -20,7 +20,7 @@ services:
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
-      APP_KEY: base64:REPLACE_WITH_KEY
+      APP_KEY: base64:t97dSVFum+JS332jA/+I1jppLiKtEbtrZRsU5O95kSs=
       DB_CONNECTION: mysql
       DB_HOST: db
       DB_PORT: 3306
@@ -35,20 +35,21 @@ services:
       - ./backend:/var/www/html
     ports:
       - "8000:8000"
+    command: sh -c "php artisan serve --host=0.0.0.0 --port=8000"
     depends_on:
       - db
 
   frontend:
-    image: node:18
-    working_dir: /usr/src/app
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
-    command: sh -c "npm install --silent && npm run dev -- --host 0.0.0.0"
+      - ./frontend:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE: "http://localhost:8000" # 或 http://backend:8000（容器網路內）
+      VITE_API_BASE: "http://backend:8000" # 使用容器網路名稱
     depends_on:
       - backend
 
