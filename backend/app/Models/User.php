@@ -13,14 +13,32 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * 指定主鍵名稱（因為我們使用 user_id 而非 id）
+     */
+    protected $primaryKey = 'user_id';
+
+    /**
+     * 指定主鍵是否自動遞增
+     */
+    public $incrementing = true;
+
+    /**
+     * 主鍵類型
+     */
+    protected $keyType = 'int';
+
+    /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
+        'login_id',
         'name',
         'email',
         'password',
+        'phone',
+        'address',
     ];
 
     /**
@@ -43,6 +61,24 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
+    }
+
+    /**
+     * 取得使用者的會員資料（如果有的話）
+     */
+    public function member()
+    {
+        return $this->hasOne(\App\Models\Member::class, 'user_id', 'user_id');
+    }
+
+    /**
+     * 取得使用者的廠商資料（如果有的話）
+     */
+    public function business()
+    {
+        return $this->hasOne(\App\Models\Business::class, 'user_id', 'user_id');
     }
 }
