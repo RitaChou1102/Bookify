@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `total_amount` DECIMAL(10,2) NOT NULL,
   `order_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `shipping_fee` DECIMAL(10,2) Not null,
-  `payment_method` TINYINT Not null, -- 0 Cash 1 Credit card 2 Bank transfer
-  `order_status` TINYINT Not null DEFAULT 0, --0 Received, 1 Processing, 2 Shipped, 3 Completed
+  `payment_method` ENUM('Cash','Credit_card', 'Bank_transfer') NOT NULL DEFAULT 'Cash',
+  `order_status` ENUM('Received','Processing', 'Shipped', 'Completed') NOT NULL DEFAULT 'Received',
   `coupon_id` BIGINT UNSIGNED DEFAULT NULL,
   `cart_id` BIGINT UNSIGNED Not null,
   PRIMARY KEY (`order_id`),
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `complaints` (
   `order_id` BIGINT UNSIGNED NOT NULL,
   `content` TEXT NOT NULL,
   `complaint_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `complaint_status` TINYINT DEFAULT 0, -- 0 pending,1 in progress,2 resolved
+  `complaint_status` ENUM('pending','in_progress', 'resolved') NOT NULL DEFAULT 'pending',
   `result` TEXT DEFAULT NULL,
   PRIMARY KEY (`complaint_id`),
   KEY `idx_complaint_order` (`order_id`),
