@@ -84,7 +84,6 @@ CREATE TABLE IF NOT EXISTS `books` (
   `edition` INT DEFAULT NULL,
   `publisher` VARCHAR(255) DEFAULT NULL,
   `description` TEXT DEFAULT NULL,
-  `image_id` BIGINT UNSIGNED DEFAULT NULL,
   `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `condition` ENUM('new','used') NOT NULL DEFAULT 'new',
   `category_id` BIGINT UNSIGNED DEFAULT NULL,
