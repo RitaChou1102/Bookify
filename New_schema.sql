@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS `bookify` CHARACTER SET utf8mb4 COLLATE utf8mb4_un
 USE `bookify`;
 
 -- 1. Users
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `user_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `login_id` VARCHAR(191) NOT NULL,
   `name` VARCHAR(191) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Admins
-CREATE TABLE `admins` (
+CREATE TABLE IF NOT EXISTS `admins` (
   `admin_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `login_id` VARCHAR(191) NOT NULL,
   `name` VARCHAR(191) NOT NULL,
@@ -27,21 +27,21 @@ CREATE TABLE `admins` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Categories
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
   `category_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(191) NOT NULL,
   PRIMARY KEY (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Authors
-CREATE TABLE `authors` (
+CREATE TABLE IF NOT EXISTS `authors` (
   `author_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`author_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Member (User Delete -> Cascade)
-CREATE TABLE `member` (
+CREATE TABLE IF NOT EXISTS `member` (
   `member_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (`member_id`),
@@ -50,7 +50,7 @@ CREATE TABLE `member` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. Businesses (User Delete -> Cascade)
-CREATE TABLE `businesses` (
+CREATE TABLE IF NOT EXISTS `businesses` (
   `business_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `bank_account` VARCHAR(255) NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE `businesses` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. Carts (User Delete -> Cascade)
-CREATE TABLE `carts` (
+CREATE TABLE IF NOT EXISTS `carts` (
   `cart_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `member_id` BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (`cart_id`),
@@ -69,10 +69,10 @@ CREATE TABLE `carts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 8. Coupons 
-CREATE TABLE `coupons` (
+CREATE TABLE IF NOT EXISTS`coupons` (
   `coupon_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL,
-  `business_id` BIGINT UNSIGNED DEFAULT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL,
   `code` VARCHAR(191) NOT NULL,
   `description` TEXT DEFAULT NULL,
   `start_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,14 +83,15 @@ CREATE TABLE `coupons` (
   `usage_limit` INT DEFAULT 1,
   `used_count` INT DEFAULT 0,
   `coupon_type` ENUM('shipping', 'seasonal', 'special_event') NOT NULL DEFAULT 'shipping',
+  `is_deleted` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`coupon_id`),
   UNIQUE KEY `uq_coupon_code` (`code`),
   KEY `idx_coupon_business` (`business_id`),
-  CONSTRAINT `fk_coupon_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`business_id`) ON DELETE SET NULL
+  CONSTRAINT `fk_coupon_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`business_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 9. Books 
-CREATE TABLE `books` (
+CREATE TABLE IF NOT EXISTS `books` (
   `book_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(500) NOT NULL,
   `author_id` BIGINT UNSIGNED DEFAULT NULL,
@@ -102,7 +103,7 @@ CREATE TABLE `books` (
   `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `condition` ENUM('new','used') NOT NULL DEFAULT 'new',
   `category_id` BIGINT UNSIGNED DEFAULT NULL,
-  `business_id` BIGINT UNSIGNED DEFAULT NULL, 
+  `business_id` BIGINT UNSIGNED NOT NULL, 
   `stock` INT NOT NULL DEFAULT 0,
   `listing` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`book_id`),
@@ -112,11 +113,11 @@ CREATE TABLE `books` (
   UNIQUE KEY `uq_book_selling_unit` (`isbn`, `condition`, `business_id`),
   CONSTRAINT `fk_books_author` FOREIGN KEY (`author_id`) REFERENCES `authors`(`author_id`) ON DELETE SET NULL,
   CONSTRAINT `fk_books_category` FOREIGN KEY (`category_id`) REFERENCES `categories`(`category_id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_books_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`business_id`) ON DELETE SET NULL
+  CONSTRAINT `fk_books_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`business_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 10. Orders
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS`orders` (
   `order_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `member_id` BIGINT UNSIGNED DEFAULT NULL,  
   `business_id` BIGINT UNSIGNED DEFAULT NULL, 
@@ -124,7 +125,7 @@ CREATE TABLE `orders` (
   `order_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `shipping_fee` DECIMAL(10,2) NOT NULL,
   `payment_method` ENUM('Cash','Credit_card', 'Bank_transfer') NOT NULL DEFAULT 'Cash',
-  `order_status` ENUM('Received','Processing', 'Shipped', 'Completed') NOT NULL DEFAULT 'Received',
+  `order_status` ENUM('Received','Processing', 'Shipped', 'Completed', 'Cancelled') NOT NULL DEFAULT 'Received',
   `coupon_id` BIGINT UNSIGNED DEFAULT NULL,
   `cart_id` BIGINT UNSIGNED DEFAULT NULL,   
   PRIMARY KEY (`order_id`),
@@ -138,7 +139,7 @@ CREATE TABLE `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 11. Order Details
-CREATE TABLE `order_details` (
+CREATE TABLE IF NOT EXISTS`order_details` (
   `detail_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` BIGINT UNSIGNED NOT NULL,
   `book_id` BIGINT UNSIGNED NOT NULL,
@@ -154,7 +155,7 @@ CREATE TABLE `order_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 12. Cart Items
-CREATE TABLE `cart_items` (
+CREATE TABLE IF NOT EXISTS `cart_items` (
   `cart_item_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `cart_id` BIGINT UNSIGNED NOT NULL,
   `book_id` BIGINT UNSIGNED NOT NULL,
@@ -169,7 +170,7 @@ CREATE TABLE `cart_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 13. Images
-CREATE TABLE `images` (
+CREATE TABLE IF NOT EXISTS `images` (
   `image_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `book_id` BIGINT UNSIGNED NOT NULL,
   `image_index` INT DEFAULT 0,
@@ -181,7 +182,7 @@ CREATE TABLE `images` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 14. Complaints
-CREATE TABLE `complaints` (
+CREATE TABLE IF NOT EXISTS `complaints` (
   `complaint_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` BIGINT UNSIGNED NOT NULL,
   `content` TEXT NOT NULL,
@@ -194,7 +195,7 @@ CREATE TABLE `complaints` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 15. Reviews
-CREATE TABLE `reviews` (
+CREATE TABLE IF NOT EXISTS `reviews` (
   `review_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `book_id` BIGINT UNSIGNED NOT NULL,
   `order_id` BIGINT UNSIGNED DEFAULT NULL,
@@ -210,7 +211,7 @@ CREATE TABLE `reviews` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 16. Search Histories
-CREATE TABLE `search_histories` (
+CREATE TABLE IF NOT EXISTS `search_histories` (
   `history_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `member_id` BIGINT UNSIGNED NOT NULL,
   `keyword` VARCHAR(500) NOT NULL,
@@ -221,7 +222,7 @@ CREATE TABLE `search_histories` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 17. Blacklist
-CREATE TABLE `blacklist` (
+CREATE TABLE IF NOT EXISTS `blacklist` (
   `blacklist_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `blocked_userid` BIGINT UNSIGNED NOT NULL,
   `reason` TEXT NOT NULL,
@@ -234,11 +235,11 @@ CREATE TABLE `blacklist` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 18. Reports
-CREATE TABLE `reports` (
+CREATE TABLE IF NOT EXISTS `reports` (
   `report_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `admin_id` BIGINT UNSIGNED DEFAULT NULL,
   `generation_date` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `report_type` ENUM('sales_summary', 'inventory_status', 'user_activity', 'complaint_analysis') DEFAULT NULL,
+  `report_type` ENUM('sales_summary', 'inventory_status', 'user_activity', 'complaint_analysis') NOT NULL,
   `time_period_start` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `time_period_end` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `stats_data` TEXT DEFAULT NULL,
