@@ -14,6 +14,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    'aliases' => ['Cloudinary' => CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::class],
 
     /*
     |--------------------------------------------------------------------------
