@@ -57,7 +57,7 @@ const handleLogin = () => {
 }
 
 const goToRegister = () => {
-  alert('註冊頁面開發中')
+  router.push('/register')
 }
 </script>
 

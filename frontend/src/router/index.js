@@ -3,6 +3,7 @@ import Home from '../page/Home.vue'
 import Login from '../page/Login.vue'
 import CloudinaryUploadTest from '../page/CloudinaryUploadTest.vue'
 import BookDetail from '../page/BookDetail.vue'
+import Register from '../page/Register.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,6 +17,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: Register
     },
     {
       path: '/book/:id',

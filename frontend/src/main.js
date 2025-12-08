@@ -4,12 +4,17 @@ import App from './App.vue'
 import router from './router'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
-import Cloudinary from '@cloudinary/vue';
+
+// 引入新版元件
+import { AdvancedImage, AdvancedVideo } from '@cloudinary/vue';
+
 const app = createApp(App)
 
 app.use(router)
 app.use(ElementPlus)
-app.use(Cloudinary, {
-    cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-});
+
+// 註冊全域元件
+app.component('AdvancedImage', AdvancedImage);
+app.component('AdvancedVideo', AdvancedVideo);
+
 app.mount('#app')
