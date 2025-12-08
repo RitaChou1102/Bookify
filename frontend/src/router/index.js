@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../page/Home.vue'
 import Login from '../page/Login.vue'
 import CloudinaryUploadTest from '../page/CloudinaryUploadTest.vue'
+import BookDetail from '../page/BookDetail.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -14,6 +16,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: Login
+    },
+    {
+      path: '/book/:id',
+      name: 'BookDetail',
+      component: BookDetail
     },
     {
       path: '/upload-test', // <--- 您要訪問的 URL 路徑
