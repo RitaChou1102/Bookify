@@ -96,9 +96,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // 4. 管理員專區 (Admin Only)
     // ============================================
-    Route::prefix('admin')->group(function () {
-        Route::post('/ban', [AdminController::class, 'banUser']);        // 封鎖使用者
-        Route::put('/complains/{id}/resolve', [AdminController::class, 'resolveComplain']); // 處理客訴
-        Route::get('/reports', [AdminController::class, 'getReports']);  // 查看報表
+    Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    
+        // --- 原有的管理員路由 ---
+        Route::post('/ban', [AdminController::class, 'banUser']);
+        Route::put('/complains/{id}/resolve', [AdminController::class, 'resolveComplain']);
+        Route::get('/reports', [AdminController::class, 'getReports']);
+
+        // --- [新增] 作者管理 (Admin) ---
+        Route::post('/authors', [AuthorController::class, 'store']);       // 新增作者
+        Route::put('/authors/{id}', [AuthorController::class, 'update']);  // 修改作者
+        Route::delete('/authors/{id}', [AuthorController::class, 'destroy']); // 刪除作者
+        
+        // --- [新增] 書籍分類管理 (Admin) ---
+        Route::post('/categories', [BookCategoryController::class, 'store']);    // 新增分類
+        Route::put('/categories/{id}', [BookCategoryController::class, 'update']); // 修改分類
+        Route::delete('/categories/{id}', [BookCategoryController::class, 'destroy']); // 刪除分類
     });
 });
