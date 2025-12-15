@@ -20,8 +20,9 @@ class CartController extends Controller
         }
 
         // 取得購物車及其內容（包含書籍資訊和封面圖）
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
         $cart = Cart::with(['items.book.coverImage'])
-                    ->firstOrCreate(['member_id' => $user->member->member_id]);
+                    ->firstOrCreate(['member_id' => $user->user_id]);
 
         return response()->json($cart);
     }
@@ -35,7 +36,8 @@ class CartController extends Controller
         ]);
 
         $user = $request->user();
-        $cart = Cart::firstOrCreate(['member_id' => $user->member->member_id]);
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
+        $cart = Cart::firstOrCreate(['member_id' => $user->user_id]);
         $book = Book::find($request->book_id);
 
         // 檢查庫存
@@ -72,7 +74,8 @@ class CartController extends Controller
         $item = CartItem::findOrFail($id);
         
         // 檢查是否為自己的購物車項目
-        if ($item->cart->member_id !== $request->user()->member->member_id) {
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
+        if ($item->cart->member_id !== $request->user()->user_id) {
             return response()->json(['message' => '無權限'], 403);
         }
 
@@ -88,7 +91,8 @@ class CartController extends Controller
     {
         $item = CartItem::findOrFail($id);
         
-        if ($item->cart->member_id !== $request->user()->member->member_id) {
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
+        if ($item->cart->member_id !== $request->user()->user_id) {
             return response()->json(['message' => '無權限'], 403);
         }
 
@@ -99,7 +103,8 @@ class CartController extends Controller
     // 清空購物車
     public function clear(Request $request)
     {
-        $cart = $request->user()->member->cart;
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
+        $cart = Cart::where('member_id', $request->user()->user_id)->first();
         if ($cart) {
             $cart->items()->delete();
         }

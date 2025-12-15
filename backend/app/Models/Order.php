@@ -37,6 +37,11 @@ class Order extends Model
     ];
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -47,10 +52,6 @@ class Order extends Model
             'total_amount' => 'decimal:2',
             'order_time' => 'datetime',
             'shipping_fee' => 'decimal:2',
-            'payment_method' => 'integer',
-            'order_status' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
@@ -110,19 +111,5 @@ class Order extends Model
         return $this->hasMany(Review::class, 'order_id', 'order_id');
     }
 
-    /**
-     * 付款方式常數
-     */
-    const PAYMENT_CASH = 0;        // 貨到付款
-    const PAYMENT_CREDIT_CARD = 1; // 信用卡
-    const PAYMENT_BANK_TRANSFER = 2; // 銀行轉帳
-
-    /**
-     * 訂單狀態常數
-     */
-    const STATUS_RECEIVED = 0;   // 已接收
-    const STATUS_PROCESSING = 1; // 處理中
-    const STATUS_SHIPPED = 2;    // 已出貨
-    const STATUS_COMPLETED = 3;  // 已完成
 }
 

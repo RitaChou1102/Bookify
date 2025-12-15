@@ -37,7 +37,13 @@ class Coupon extends Model
         'usage_limit',
         'used_count',
         'coupon_type',
+        'is_deleted',
     ];
+
+    /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
 
     /**
      * Get the attributes that should be cast.
@@ -49,14 +55,11 @@ class Coupon extends Model
         return [
             'start_date' => 'datetime',
             'end_date' => 'datetime',
-            'discount_type' => 'integer',
             'discount_value' => 'decimal:2',
             'limit_price' => 'decimal:2',
             'usage_limit' => 'integer',
             'used_count' => 'integer',
-            'coupon_type' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'is_deleted' => 'boolean',
         ];
     }
 

@@ -19,24 +19,50 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('reviews', function (Blueprint $table) {
-            $table->unsignedBigInteger('review_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('book_id'); // 被評價的書籍ID
-            $table->unsignedBigInteger('order_id'); // 所屬訂單編號
-            $table->integer('rating'); // 評分（通常是 1-5）
-            $table->text('comment'); // 評論內容
-            $table->dateTime('review_time'); // 評價時間
-            $table->text('reply')->nullable(); // 賣家回覆內容（可選）
-            $table->dateTime('reply_time')->nullable(); // 賣家回覆時間（可選）
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束
-            $table->foreign('book_id')->references('book_id')->on('books')->onDelete('restrict');
-            $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('restrict');
-            
-            // 建立索引
-            $table->index('book_id');
-            $table->index('order_id');
-            $table->index('rating');
+            // 1. 主鍵
+            $table->id('review_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('book_id');
+            $table->unsignedBigInteger('order_id')->nullable();
+
+            // 3. 評分與評論
+            // SQL: TINYINT NOT NULL DEFAULT 5
+            $table->tinyInteger('rating')->default(5);
+
+            // SQL: TEXT DEFAULT NULL
+            $table->text('comment')->nullable();
+
+            // 4. 時間
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('review_time')->useCurrent();
+
+            // SQL: TEXT DEFAULT NULL
+            $table->text('reply')->nullable();
+
+            // SQL: DATETIME DEFAULT NULL
+            $table->dateTime('reply_time')->nullable();
+
+            // 5. 建立索引
+            $table->index('book_id', 'idx_reviews_book');
+
+            // 6. 外鍵約束
+            // SQL: CONSTRAINT `fk_reviews_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`book_id`) ON DELETE CASCADE
+            $table->foreign('book_id', 'fk_reviews_book')
+                  ->references('book_id')
+                  ->on('books')
+                  ->onDelete('cascade');
+
+            // SQL: CONSTRAINT `fk_reviews_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`order_id`) ON DELETE SET NULL
+            $table->foreign('order_id', 'fk_reviews_order')
+                  ->references('order_id')
+                  ->on('orders')
+                  ->onDelete('set null');
+
+            // 注意：根據 schema，reviews 表沒有 timestamps
         });
     }
 

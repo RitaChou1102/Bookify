@@ -34,6 +34,11 @@ class Report extends Model
     ];
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -41,12 +46,10 @@ class Report extends Model
     protected function casts(): array
     {
         return [
-            'generation_date' => 'date',
-            'time_period_start' => 'date',
-            'time_period_end' => 'date',
+            'generation_date' => 'datetime',
+            'time_period_start' => 'datetime',
+            'time_period_end' => 'datetime',
             'stats_data' => 'array', // JSON 自動轉換為陣列
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

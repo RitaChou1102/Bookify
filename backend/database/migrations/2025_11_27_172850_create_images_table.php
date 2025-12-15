@@ -19,17 +19,37 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('images', function (Blueprint $table) {
-            $table->unsignedBigInteger('image_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('book_id'); // 關聯到書籍
-            $table->integer('index')->default(0); // 順序，0 通常是封面
-            $table->string('image_url'); // 圖片網址
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束：關聯到 books 表
-            $table->foreign('book_id')->references('book_id')->on('books')->onDelete('cascade');
-            
-            // 建立索引以加快查詢速度
-            $table->index(['book_id', 'index']);
+            // 1. 主鍵
+            $table->id('image_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('book_id');
+
+            // 3. 圖片索引與 URL
+            // SQL: INT DEFAULT 0
+            $table->integer('image_index')->default(0);
+
+            // SQL: VARCHAR(1000) NOT NULL
+            $table->string('image_url', 1000);
+
+            // 4. 建立索引
+            $table->index('book_id', 'idx_images_book');
+
+            // 5. 複合唯一索引
+            // SQL: UNIQUE KEY `uq_book_sequence` (`book_id`, `image_index`)
+            $table->unique(['book_id', 'image_index'], 'uq_book_sequence');
+
+            // 6. 外鍵約束
+            // SQL: CONSTRAINT `fk_image_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`book_id`) ON DELETE CASCADE
+            $table->foreign('book_id', 'fk_image_book')
+                  ->references('book_id')
+                  ->on('books')
+                  ->onDelete('cascade');
+
+            // 注意：根據 schema，images 表沒有 timestamps
         });
     }
 

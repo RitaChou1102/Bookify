@@ -20,21 +20,42 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cart_items', function (Blueprint $table) {
-            $table->unsignedBigInteger('cart_item_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('cart_id'); // 購物車ID（關聯到 carts 表）
-            $table->unsignedBigInteger('book_id'); // 書籍ID
-            $table->integer('quantity'); // 數量
-            $table->decimal('price', 10, 2); // 單價（加入購物車時的價格）
-            $table->decimal('subtotal', 10, 2); // 小計（quantity * price）
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束
-            $table->foreign('cart_id')->references('cart_id')->on('carts')->onDelete('cascade');
-            $table->foreign('book_id')->references('book_id')->on('books')->onDelete('cascade');
+            // 1. 主鍵
+            $table->id('cart_item_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('cart_id');
+            $table->unsignedBigInteger('book_id');
+
+            // 3. 數量與價格
+            // SQL: INT NOT NULL DEFAULT 1
+            $table->integer('quantity')->default(1);
+
+            // SQL: DECIMAL(10,2) NOT NULL DEFAULT 0.00
+            $table->decimal('price', 10, 2)->default(0.00);
+
+            // SQL: DECIMAL(10,2) NOT NULL DEFAULT 0.00
+            $table->decimal('subtotal', 10, 2)->default(0.00);
+
+            // 4. 建立索引
+            $table->index('cart_id', 'idx_cartitems_cart');
+            $table->index('book_id', 'idx_cartitems_book');
+
+            // 5. 外鍵約束
+            $table->foreign('cart_id', 'fk_cartitems_cart')
+                  ->references('cart_id')
+                  ->on('carts')
+                  ->onDelete('cascade');
             
-            // 建立索引
-            $table->index('cart_id');
-            $table->index('book_id');
+            $table->foreign('book_id', 'fk_cartitems_book')
+                  ->references('book_id')
+                  ->on('books')
+                  ->onDelete('cascade');
+
+            // 注意：根據 schema，cart_items 表沒有 timestamps
         });
     }
 

@@ -36,8 +36,14 @@ class Book extends Model
         'condition',
         'category_id',
         'business_id',
+        'stock',
         'listing',
     ];
+
+    /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
 
     /**
      * Get the attributes that should be cast.
@@ -50,8 +56,6 @@ class Book extends Model
             'publish_date' => 'date',
             'price' => 'decimal:2',
             'listing' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
@@ -84,15 +88,15 @@ class Book extends Model
      */
     public function images()
     {
-        return $this->hasMany(Image::class, 'book_id', 'book_id')->orderBy('index');
+        return $this->hasMany(Image::class, 'book_id', 'book_id')->orderBy('image_index');
     }
 
     /**
-     * 取得書籍的封面圖片（index=0 的圖片）
+     * 取得書籍的封面圖片（image_index=0 的圖片）
      */
     public function coverImage()
     {
-        return $this->hasOne(Image::class, 'book_id', 'book_id')->where('index', 0);
+        return $this->hasOne(Image::class, 'book_id', 'book_id')->where('image_index', 0);
     }
 
     /**

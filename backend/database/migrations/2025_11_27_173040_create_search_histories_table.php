@@ -19,19 +19,34 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('search_histories', function (Blueprint $table) {
-            $table->unsignedBigInteger('history_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('member_id'); // 會員ID
-            $table->string('keyword')->nullable(); // 關鍵字（可選）
-            $table->dateTime('search_time'); // 搜尋時間
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束：關聯到 members 表
-            $table->foreign('member_id')->references('member_id')->on('members')->onDelete('cascade');
-            
-            // 建立索引以加快查詢速度
-            $table->index('member_id');
-            $table->index('search_time');
-            $table->index('keyword');
+            // 1. 主鍵
+            $table->id('history_id');
+
+            // 2. 外鍵欄位
+            // 注意：根據 schema，這裡雖然叫 member_id，但外鍵指向 users 表
+            $table->unsignedBigInteger('member_id');
+
+            // 3. 關鍵字與時間
+            // SQL: VARCHAR(500) NOT NULL
+            $table->string('keyword', 500);
+
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('search_time')->useCurrent();
+
+            // 4. 建立索引
+            $table->index('member_id', 'idx_search_member');
+
+            // 5. 外鍵約束
+            // SQL: CONSTRAINT `fk_search_member` FOREIGN KEY (`member_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE
+            $table->foreign('member_id', 'fk_search_member')
+                  ->references('user_id')
+                  ->on('users')
+                  ->onDelete('cascade');
+
+            // 注意：根據 schema，search_histories 表沒有 timestamps
         });
     }
 

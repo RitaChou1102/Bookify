@@ -20,32 +20,72 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('order_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('member_id'); // 買家ID
-            $table->decimal('total_amount', 10, 2); // 總金額
-            $table->dateTime('order_time'); // 下單時間
-            $table->unsignedBigInteger('business_id'); // 廠商ID
-            $table->decimal('shipping_fee', 10, 2); // 運費
-            $table->tinyInteger('payment_method'); // 付款方式：0=貨到付款，1=信用卡，2=銀行轉帳
-            $table->tinyInteger('order_status')->default(0); // 訂單狀態：0=已接收，1=處理中，2=已出貨，3=已完成
-            $table->unsignedBigInteger('coupon_id')->nullable(); // 使用的優惠券ID（可選）
-            $table->unsignedBigInteger('cart_id'); // 購物車ID
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束
-            $table->foreign('member_id')->references('member_id')->on('members')->onDelete('restrict');
-            $table->foreign('business_id')->references('business_id')->on('businesses')->onDelete('restrict');
-            $table->foreign('coupon_id')->references('coupon_id')->on('coupons')->onDelete('set null');
-            $table->foreign('cart_id')->references('cart_id')->on('carts')->onDelete('restrict');
+            // 1. 主鍵
+            $table->id('order_id');
+
+            // 2. 外鍵欄位 (全部允許 NULL，因為是用 SET NULL 約束)
+            $table->unsignedBigInteger('member_id')->nullable();
+            $table->unsignedBigInteger('business_id')->nullable();
+            $table->unsignedBigInteger('coupon_id')->nullable();
+            $table->unsignedBigInteger('cart_id')->nullable();
+
+            // 3. 金額與費用
+            // SQL: DECIMAL(10,2) NOT NULL
+            $table->decimal('total_amount', 10, 2);
+            $table->decimal('shipping_fee', 10, 2);
+
+            // 4. 時間
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('order_time')->useCurrent();
+
+            // 5. ENUM 狀態與付款方式
+            // SQL: ENUM(...) NOT NULL DEFAULT 'Cash'
+            $table->enum('payment_method', ['Cash', 'Credit_card', 'Bank_transfer'])
+                  ->default('Cash');
+
+            // SQL: ENUM(...) NOT NULL DEFAULT 'Received'
+            $table->enum('order_status', ['Received', 'Processing', 'Shipped', 'Completed', 'Cancelled'])
+                  ->default('Received');
+
+            // 6. 建立索引 (Indexes)
+            $table->index('member_id', 'idx_orders_member');
+            $table->index('business_id', 'idx_orders_business');
+            $table->index('cart_id', 'idx_orders_cart');
+            // SQL 沒寫 coupon_id 的索引，但通常建議加，不過這裡我遵照 SQL 不加
+
+            // 7. 外鍵約束 (Constraints)
             
-            // 建立索引以加快查詢速度
-            $table->index('member_id');
-            $table->index('business_id');
-            $table->index('order_status');
-            $table->index('order_time');
+            // Member
+            // ⚠️ 注意：這裡指向 'members' 表 (修正 SQL 中的單數 member)
+            $table->foreign('member_id', 'fk_orders_member')
+                  ->references('member_id')
+                  ->on('members') 
+                  ->onDelete('set null');
+
+            // Business
+            $table->foreign('business_id', 'fk_orders_business')
+                  ->references('business_id')
+                  ->on('businesses')
+                  ->onDelete('set null');
+
+            // Cart
+            $table->foreign('cart_id', 'fk_orders_cart')
+                  ->references('cart_id')
+                  ->on('carts')
+                  ->onDelete('set null');
+
+            // Coupon
+            $table->foreign('coupon_id', 'fk_orders_coupon')
+                  ->references('coupon_id')
+                  ->on('coupons')
+                  ->onDelete('set null');
+
+            // $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */

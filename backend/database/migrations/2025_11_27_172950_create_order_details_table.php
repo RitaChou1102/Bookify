@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      * 
@@ -19,24 +18,52 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_details', function (Blueprint $table) {
-            $table->unsignedBigInteger('detail_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('order_id'); // 訂單ID
-            $table->unsignedBigInteger('book_id'); // 書籍ID
-            $table->integer('quantity'); // 購買數量
-            $table->decimal('piece_price', 10, 2); // 單價（下單時的價格）
-            $table->decimal('subtotal', 10, 2); // 小計（quantity * piece_price）
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束
-            $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('cascade');
-            $table->foreign('book_id')->references('book_id')->on('books')->onDelete('restrict');
-            
-            // 建立索引
-            $table->index('order_id');
-            $table->index('book_id');
+            // 1. 主鍵
+            $table->id('detail_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('order_id');
+            $table->unsignedBigInteger('book_id');
+
+            // 3. 數量與價格
+            // SQL: INT DEFAULT 1
+            $table->integer('quantity')->default(1);
+
+            // SQL: DECIMAL(10,2) NOT NULL DEFAULT 0.00
+            $table->decimal('piece_price', 10, 2)->default(0.00);
+
+            // 4. [關鍵] 虛擬生成欄位 (Virtual Column)
+            // SQL: subtotal DECIMAL(10,2) AS (quantity * piece_price) VIRTUAL
+            // Laravel 支援 virtualAs 方法來建立這種欄位
+            $table->decimal('subtotal', 10, 2)->virtualAs('quantity * piece_price');
+
+            // 5. 時間戳記
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP (只有 created_at)
+            $table->dateTime('created_at')->useCurrent();
+
+            // 6. 建立索引 (Indexes)
+            $table->index('order_id', 'idx_orderdetails_order');
+            $table->index('book_id', 'idx_orderdetails_book');
+
+            // 7. 外鍵約束 (Constraints)
+
+            // Order: 訂單刪除時，詳情一併刪除 (Cascade)
+            $table->foreign('order_id', 'fk_orderdetails_order')
+                ->references('order_id')
+                ->on('orders')
+                ->onDelete('cascade');
+
+            // Book: 書籍如果還有訂單紀錄，禁止刪除該書籍 (Restrict)
+            // 這能保護歷史訂單資料的完整性
+            $table->foreign('book_id', 'fk_orderdetails_book')
+                ->references('book_id')
+                ->on('books')
+                ->onDelete('restrict');
         });
     }
-
     /**
      * Reverse the migrations.
      */

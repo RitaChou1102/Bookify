@@ -20,28 +20,67 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('coupons', function (Blueprint $table) {
-            $table->unsignedBigInteger('coupon_id')->autoIncrement()->primary();
-            $table->string('name'); // 優惠券名稱
-            $table->unsignedBigInteger('business_id'); // 發行廠商ID
-            $table->string('code')->unique(); // 優惠券代碼，必須唯一
-            $table->text('description'); // 優惠券描述
-            $table->dateTime('start_date'); // 開始時間
-            $table->dateTime('end_date'); // 結束時間
-            $table->tinyInteger('discount_type'); // 折扣種類：0=百分比，1=固定金額
-            $table->decimal('discount_value', 10, 2); // 折扣數值
-            $table->decimal('limit_price', 10, 2); // 使用優惠門檻金額
-            $table->integer('usage_limit')->default(1); // 可使用次數
-            $table->integer('used_count')->default(0); // 已被使用次數
-            $table->tinyInteger('coupon_type'); // 優惠券種類：0=運費，1=季節性，2=特殊活動
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束：關聯到 businesses 表
-            $table->foreign('business_id')->references('business_id')->on('businesses')->onDelete('restrict');
+            // 1. 主鍵
+            $table->id('coupon_id');
+
+            // 2. 基本欄位
+            $table->string('name', 255);
+            $table->unsignedBigInteger('business_id');
             
-            // 建立索引
-            $table->index('business_id');
-            $table->index('code');
-            $table->index(['start_date', 'end_date']);
+            // Code: 唯一索引
+            // SQL: VARCHAR(191) NOT NULL, UNIQUE KEY `uq_coupon_code`
+            $table->string('code', 191)->unique('uq_coupon_code');
+
+            // Description: TEXT DEFAULT NULL
+            $table->text('description')->nullable();
+
+            // 3. 日期設定
+            // SQL: DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('start_date')->useCurrent();
+            
+            // SQL: DATETIME DEFAULT NULL
+            $table->dateTime('end_date')->nullable();
+
+            // 4. 折扣設定 (Enum & Decimal)
+            // SQL: ENUM('percent_off', 'fixed') DEFAULT 'percent_off'
+            $table->enum('discount_type', ['percent_off', 'fixed'])->default('percent_off');
+
+            // SQL: DECIMAL(10,2) DEFAULT 0.00
+            $table->decimal('discount_value', 10, 2)->default(0.00);
+            
+            // SQL: DECIMAL(10,2) DEFAULT 0.00
+            $table->decimal('limit_price', 10, 2)->default(0.00);
+
+            // 5. 使用限制
+            // SQL: INT DEFAULT 1 (未指定 NOT NULL，所以是 nullable)
+            $table->integer('usage_limit')->nullable()->default(1);
+            
+            // SQL: INT DEFAULT 0
+            $table->integer('used_count')->nullable()->default(0);
+
+            // 6. 優惠券類型
+            // SQL: ENUM(...) DEFAULT 'shipping'
+            $table->enum('coupon_type', ['shipping', 'seasonal', 'special_event'])->default('shipping');
+
+            // 7. 軟刪除標記
+            // SQL: TINYINT(1) DEFAULT 0
+            // 注意：這是手動的 flag，不是 Laravel 標準的 deleted_at timestamp
+            $table->tinyInteger('is_deleted')->default(0);
+
+            // 8. 索引與外鍵
+            // KEY `idx_coupon_business`
+            $table->index('business_id', 'idx_coupon_business');
+
+            // CONSTRAINT `fk_coupon_business` ... ON DELETE CASCADE
+            $table->foreign('business_id', 'fk_coupon_business')
+                  ->references('business_id')
+                  ->on('businesses')
+                  ->onDelete('cascade');
+
+            // 注意：根據 schema，coupons 表沒有 timestamps
         });
     }
 

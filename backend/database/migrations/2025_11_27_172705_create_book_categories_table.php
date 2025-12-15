@@ -9,9 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('book_categories', function (Blueprint $table) {
-            $table->unsignedBigInteger('category_id')->autoIncrement()->primary(); // 使用 category_id 作為主鍵名稱
-            $table->string('name');
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
+
+            // 1. 主鍵
+            $table->id('category_id');
+
+            // 2. Name
+            // SQL: VARCHAR(191) NOT NULL
+            $table->string('name', 191);
+
+            // 注意：根據 schema，book_categories 表沒有 timestamps
         });
     }
 

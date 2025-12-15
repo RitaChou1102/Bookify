@@ -19,20 +19,41 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('blacklists', function (Blueprint $table) {
-            $table->unsignedBigInteger('blacklist_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('blocked_userid'); // 被封鎖者（users 表）
-            $table->text('reason'); // 封鎖原因
-            $table->dateTime('created_at'); // 建立時間（根據 Schema，黑名單只需要建立時間，不需要 updated_at）
-            $table->unsignedBigInteger('banned_by'); // 管理員ID
+        Schema::create('blacklist', function (Blueprint $table) {
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束
-            $table->foreign('blocked_userid')->references('user_id')->on('users')->onDelete('restrict');
-            $table->foreign('banned_by')->references('admin_id')->on('admins')->onDelete('restrict');
-            
-            // 建立索引
-            $table->index('blocked_userid');
-            $table->index('banned_by');
+            // 1. 主鍵
+            $table->id('blacklist_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('blocked_userid');
+            $table->unsignedBigInteger('banned_by')->nullable();
+
+            // 3. 封鎖原因與時間
+            // SQL: TEXT NOT NULL
+            $table->text('reason');
+
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('created_at')->useCurrent();
+
+            // 4. 建立索引
+            $table->index('blocked_userid', 'idx_blacklist_blocked');
+
+            // 5. 外鍵約束
+            // SQL: CONSTRAINT `fk_blacklist_blocked` FOREIGN KEY (`blocked_userid`) REFERENCES `users`(`user_id`) ON DELETE CASCADE
+            $table->foreign('blocked_userid', 'fk_blacklist_blocked')
+                  ->references('user_id')
+                  ->on('users')
+                  ->onDelete('cascade');
+
+            // SQL: CONSTRAINT `fk_blacklist_bannedby` FOREIGN KEY (`banned_by`) REFERENCES `admins`(`admin_id`) ON DELETE SET NULL
+            $table->foreign('banned_by', 'fk_blacklist_bannedby')
+                  ->references('admin_id')
+                  ->on('admins')
+                  ->onDelete('set null');
+
+            // 注意：根據 schema，blacklist 表沒有 timestamps（只有 created_at）
         });
     }
 
@@ -41,7 +62,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('blacklists');
+        Schema::dropIfExists('blacklist');
     }
 };
 

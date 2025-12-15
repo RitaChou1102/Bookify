@@ -2,70 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable; // 繼承這個類別
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens; // 如果後台也要用 Token 驗證 API
 
-class Admin extends Model
+class Admin extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, Notifiable;
 
-    /**
-     * 指定主鍵名稱
-     */
+    // 指定主鍵名稱
     protected $primaryKey = 'admin_id';
 
-    /**
-     * 指定資料表名稱
-     */
-    protected $table = 'admins';
+    // 不使用 timestamps（根據 schema）
+    public $timestamps = false;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    // 允許批量賦值的欄位
     protected $fillable = [
         'login_id',
-        'password',
         'name',
+        'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
+    // 隱藏敏感資訊
     protected $hidden = [
         'password',
+        'remember_token',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'password' => 'hashed',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
-
-    /**
-     * 取得管理員建立的黑名單
-     */
-    public function blacklists()
-    {
-        return $this->hasMany(Blacklist::class, 'banned_by', 'admin_id');
-    }
-
-    /**
-     * 取得管理員建立的報表
-     */
-    public function reports()
-    {
-        return $this->hasMany(Report::class, 'admin_id', 'admin_id');
-    }
 }
