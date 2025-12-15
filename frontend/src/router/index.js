@@ -6,6 +6,7 @@ import BookDetail from '../page/BookDetail.vue'
 import Register from '../page/Register.vue'
 import Checkout from '../page/Checkout.vue'
 import ProductUpload from '../page/ProductUpload.vue'
+import Cart from '../page/cart.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,11 @@ const router = createRouter({
       path: '/book/:id',
       name: 'BookDetail',
       component: BookDetail
+    },
+    {
+      path: '/cart',
+      name: 'Cart',
+      component: Cart
     },
     {
       path: '/upload-test', // <--- 您要訪問的 URL 路徑
