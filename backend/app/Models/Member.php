@@ -20,6 +20,11 @@ class Member extends Model
     protected $table = 'members';
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
