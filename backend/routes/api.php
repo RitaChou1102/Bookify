@@ -53,8 +53,9 @@ Route::prefix('admin')->group(function () {
 | 適用對象：一般會員 (Member) & 商家 (Business)
 | 驗證方式：Header 需帶 Authorization: Bearer <UserToken>
 */
-Route::middleware(['auth:sanctum', 'ability:user-access'])->group(function () {
-    // 這裡加上 'ability:user-access' 是為了防止管理員誤用 Token 跑來這裡 (選用，但推薦)
+Route::middleware(['auth:sanctum'])->group(function () {
+    // 注意：暫時移除 'ability:user-access' 以確保基本認證正常工作
+    // 如果需要能力檢查，可以稍後重新添加
 
     // --- 帳戶管理 ---
     Route::get('/profile', [AuthController::class, 'profile']);

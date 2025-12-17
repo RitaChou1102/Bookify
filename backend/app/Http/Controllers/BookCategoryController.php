@@ -10,13 +10,28 @@ class BookCategoryController extends Controller
     // 取得所有分類
     public function index()
     {
-        return BookCategory::all();
+        // 優化：使用分頁或限制數量，避免載入過多資料
+        // 如果分類數量不多（< 100），可以使用 limit；否則使用 paginate
+        return BookCategory::limit(100)->get();
     }
 
     // 取得單一分類及其書籍
     public function show($id)
     {
-        return BookCategory::with('books')->findOrFail($id);
+        $category = BookCategory::findOrFail($id);
+        
+        // 優化：為書籍添加分頁，避免載入過多資料
+        // 只載入上架的書籍，並使用分頁
+        $books = Book::where('category_id', $category->category_id)
+            ->where('listing', true)
+            ->with(['author', 'coverImage'])
+            ->paginate(20);
+        
+        return response()->json([
+            'category_id' => $category->category_id,
+            'name' => $category->name,
+            'books' => $books
+        ]);
     }
 
     // [新增] 建立新分類
