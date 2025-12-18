@@ -107,6 +107,8 @@ function logout() {
 }
 .logo {
   cursor: pointer;
+  color: #333;
+  margin: 0;
 }
 .left, .center, .right {
   display: flex;
