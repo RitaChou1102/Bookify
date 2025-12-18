@@ -53,7 +53,7 @@ class AuthController extends Controller
                 // 預設為一般會員
                 $member = Member::create(['user_id' => $user->user_id]);
                 // 會員註冊同時建立購物車
-                Cart::create(['member_id' => $member->member_id]);
+                Cart::create(['member_id' => $user->user_id]);
             }
 
             // 4. 發放 Token（帶有 user-access 能力）
