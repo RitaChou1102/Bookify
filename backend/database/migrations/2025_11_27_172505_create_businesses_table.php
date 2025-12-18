@@ -9,13 +9,32 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('businesses', function (Blueprint $table) {
-            $table->unsignedBigInteger('business_id')->autoIncrement()->primary(); // 使用 business_id 作為主鍵名稱
-            $table->unsignedBigInteger('user_id'); // 改為 user_id，符合你的 Schema
-            $table->string('bank_account'); // 新增銀行帳戶欄位
-            $table->timestamps();
+            // 設定編碼
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵關聯到 users 表，使用 user_id
-            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
+            // 1. 主鍵 business_id
+            $table->id('business_id');
+
+            // 2. User ID (關聯欄位)
+            $table->unsignedBigInteger('user_id');
+
+            // 3. Bank Account
+            // SQL: VARCHAR(255) NOT NULL
+            $table->string('bank_account', 255);
+
+            // 4. 設定外鍵約束
+            // CONSTRAINT `fk_business_user` ... ON DELETE CASCADE
+            $table->foreign('user_id', 'fk_business_user')
+                  ->references('user_id')
+                  ->on('users')
+                  ->onDelete('cascade');
+
+            // 5. 設定唯一索引
+            // UNIQUE KEY `uq_business_user`
+            $table->unique('user_id', 'uq_business_user');
+
+            // $table->timestamps();
         });
     }
 

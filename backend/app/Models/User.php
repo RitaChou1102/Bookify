@@ -6,79 +6,77 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
-    /**
-     * 指定主鍵名稱（因為我們使用 user_id 而非 id）
-     */
+    // 1. 指定主鍵名稱 
     protected $primaryKey = 'user_id';
 
-    /**
-     * 指定主鍵是否自動遞增
-     */
+    // 2. 指定主鍵是否自動遞增
     public $incrementing = true;
 
-    /**
-     * 主鍵類型
-     */
+    // 3. 主鍵類型
     protected $keyType = 'int';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'login_id',
         'name',
         'email',
-        'password',
+        'password', 
+        'role',         
         'phone',
         'address',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+
     protected $hidden = [
-        'password',
+        'password', 
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * 不使用 timestamps（根據 schema）
      */
+    public $timestamps = false;
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            // 'email_verified_at' => 'datetime', 
+            'password' => 'hashed',      // Laravel 會自動幫這個欄位進行 Hash 加密
         ];
     }
 
-    /**
-     * 取得使用者的會員資料（如果有的話）
-     */
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
+
+    // 取得使用者的會員資料（如果有的話）
     public function member()
     {
         return $this->hasOne(\App\Models\Member::class, 'user_id', 'user_id');
     }
 
-    /**
-     * 取得使用者的廠商資料（如果有的話）
-     */
+    // 取得使用者的廠商資料（如果有的話）
     public function business()
     {
         return $this->hasOne(\App\Models\Business::class, 'user_id', 'user_id');
+    }
+
+    // 取得使用者的購物車（注意：根據 schema，Cart 的 member_id 外鍵指向 users 表）
+    public function cart()
+    {
+        return $this->hasOne(\App\Models\Cart::class, 'member_id', 'user_id');
+    }
+
+    // 取得使用者的搜尋歷史（注意：根據 schema，SearchHistory 的 member_id 外鍵指向 users 表）
+    public function searchHistories()
+    {
+        return $this->hasMany(\App\Models\SearchHistory::class, 'member_id', 'user_id');
     }
 }

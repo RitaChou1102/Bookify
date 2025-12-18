@@ -34,13 +34,16 @@ class BookController extends Controller
     public function search($keyword)
     {
         // 搜尋書名 或 作者名稱
-        $books = Book::where('name', 'like', "%{$keyword}%")
-            ->orWhereHas('author', function($query) use ($keyword) {
-                $query->where('name', 'like', "%{$keyword}%");
+        // 優化：添加分頁機制，避免載入過多資料
+        $books = Book::where('listing', true)
+            ->where(function($query) use ($keyword) {
+                $query->where('name', 'like', "%{$keyword}%")
+                      ->orWhereHas('author', function($q) use ($keyword) {
+                          $q->where('name', 'like', "%{$keyword}%");
+                      });
             })
             ->with(['author', 'coverImage'])
-            ->where('listing', true)
-            ->get();
+            ->paginate(20); // 每頁 20 筆
 
         return response()->json($books);
     }

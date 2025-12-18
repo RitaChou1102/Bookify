@@ -27,7 +27,7 @@ class ComplainController extends Controller
             'order_id' => $request->order_id,
             'content' => $request->content,
             'complaint_time' => now(),
-            'complaint_status' => Complain::STATUS_PENDING // 0: 待處理
+            'complaint_status' => Complain::STATUS_PENDING // 'pending': 待處理
         ]);
 
         return response()->json(['message' => '投訴已提交', 'data' => $complain], 201);

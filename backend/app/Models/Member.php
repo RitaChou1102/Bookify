@@ -20,6 +20,11 @@ class Member extends Model
     protected $table = 'members';
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -39,9 +44,9 @@ class Member extends Model
     /**
      * 取得會員的購物車
      */
-    public function cart()
+    public function getCartAttribute()
     {
-        return $this->hasOne(Cart::class, 'member_id', 'member_id');
+        return $this->user ? $this->user->cart : null;
     }
 
     /**
@@ -55,9 +60,9 @@ class Member extends Model
     /**
      * 取得會員的搜尋歷史
      */
-    public function searchHistories()
+    public function getSearchHistoriesAttribute()
     {
-        return $this->hasMany(SearchHistory::class, 'member_id', 'member_id');
+        return $this->user ? $this->user->searchHistories : collect();
     }
 }
 

@@ -18,11 +18,16 @@ class OrderController extends Controller
         $user = $request->user();
         $member = $user->member;
         
-        if (!$member || !$member->cart || $member->cart->items->isEmpty()) {
-            return response()->json(['message' => '購物車是空的'], 400);
+        if (!$member) {
+            return response()->json(['message' => '非會員無法結帳'], 403);
         }
 
-        $cart = $member->cart;
+        // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
+        $cart = Cart::where('member_id', $user->user_id)->first();
+        
+        if (!$cart || $cart->items->isEmpty()) {
+            return response()->json(['message' => '購物車是空的'], 400);
+        }
         
         // 開始資料庫交易 (Transaction)，確保資料一致性
         return DB::transaction(function () use ($request, $member, $cart) {
@@ -66,8 +71,8 @@ class OrderController extends Controller
                 'business_id' => $businessId,
                 'total_amount' => $finalAmount,
                 'shipping_fee' => $shippingFee,
-                'payment_method' => $request->payment_method ?? Order::PAYMENT_CASH,
-                'order_status' => Order::STATUS_RECEIVED,
+                'payment_method' => $request->payment_method ?? 'Cash',
+                'order_status' => 'Received',
                 'coupon_id' => $couponId,
                 'cart_id' => $cart->cart_id, // 記錄來源購物車
                 'order_time' => now(),
@@ -80,7 +85,7 @@ class OrderController extends Controller
                     'book_id' => $item->book_id,
                     'quantity' => $item->quantity,
                     'piece_price' => $item->price,
-                    'subtotal' => $item->subtotal,
+                    // 注意：subtotal 是虛擬欄位，會自動計算，不需要手動設定
                 ]);
 
                 // 扣庫存
@@ -99,7 +104,7 @@ class OrderController extends Controller
     {
         $orders = Order::with(['details.book', 'business'])
                        ->where('member_id', $request->user()->member->member_id)
-                       ->orderByDesc('created_at')
+                       ->orderByDesc('order_time')
                        ->get();
         return response()->json($orders);
     }

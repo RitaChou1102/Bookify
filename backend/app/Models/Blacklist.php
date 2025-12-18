@@ -15,9 +15,9 @@ class Blacklist extends Model
     protected $primaryKey = 'blacklist_id';
 
     /**
-     * 指定資料表名稱
+     * 指定資料表名稱（根據 schema，表名是 blacklist）
      */
-    protected $table = 'blacklists';
+    protected $table = 'blacklist';
 
     /**
      * 不使用 timestamps（因為我們手動定義了 created_at）

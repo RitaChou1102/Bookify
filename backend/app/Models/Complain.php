@@ -15,9 +15,14 @@ class Complain extends Model
     protected $primaryKey = 'complaint_id';
 
     /**
-     * 指定資料表名稱
+     * 指定資料表名稱（根據 schema，表名是 complaints）
      */
-    protected $table = 'complains';
+    protected $table = 'complaints';
+
+    /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -41,8 +46,6 @@ class Complain extends Model
     {
         return [
             'complaint_time' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
@@ -57,8 +60,8 @@ class Complain extends Model
     /**
      * 投訴狀態常數
      */
-    const STATUS_PENDING = '0';      // 待處理
-    const STATUS_IN_PROGRESS = '1';  // 處理中
-    const STATUS_RESOLVED = '2';     // 已解決
+    const STATUS_PENDING = 'pending';      // 待處理
+    const STATUS_IN_PROGRESS = 'in_progress';  // 處理中
+    const STATUS_RESOLVED = 'resolved';     // 已解決
 }
 

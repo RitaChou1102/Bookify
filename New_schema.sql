@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `login_id` VARCHAR(191) NOT NULL,
   `name` VARCHAR(191) NOT NULL,
   `email` VARCHAR(191) NOT NULL,
-  `password_hash` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
   `phone` VARCHAR(50) DEFAULT NULL,
   `address` VARCHAR(500) DEFAULT NULL,
   `role` ENUM('member','business') NOT NULL DEFAULT 'member',
@@ -21,13 +21,13 @@ CREATE TABLE IF NOT EXISTS `admins` (
   `admin_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `login_id` VARCHAR(191) NOT NULL,
   `name` VARCHAR(191) NOT NULL,
-  `password_hash` VARCHAR(255) NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
   PRIMARY KEY (`admin_id`),
   UNIQUE KEY (`login_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Categories
-CREATE TABLE IF NOT EXISTS `categories` (
+CREATE TABLE IF NOT EXISTS `book_categories` (
   `category_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(191) NOT NULL,
   PRIMARY KEY (`category_id`)
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS `authors` (
   PRIMARY KEY (`author_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. Member (User Delete -> Cascade)
-CREATE TABLE IF NOT EXISTS `member` (
+-- 5. Members (User Delete -> Cascade)
+CREATE TABLE IF NOT EXISTS `members` (
   `member_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (`member_id`),

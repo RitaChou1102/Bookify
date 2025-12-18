@@ -20,13 +20,18 @@ class Image extends Model
     protected $table = 'images';
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
         'book_id',
-        'index',
+        'image_index',
         'image_url',
     ];
 
@@ -38,9 +43,7 @@ class Image extends Model
     protected function casts(): array
     {
         return [
-            'index' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'image_index' => 'integer',
         ];
     }
 

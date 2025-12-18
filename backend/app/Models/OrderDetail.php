@@ -29,8 +29,19 @@ class OrderDetail extends Model
         'book_id',
         'quantity',
         'piece_price',
-        'subtotal',
+        // 注意：subtotal 是虛擬欄位，不需要在 fillable 中
     ];
+
+    /**
+     * 只使用 created_at，不使用 updated_at（根據 schema）
+     */
+    public $timestamps = true;
+
+    /**
+     * 指定時間戳記欄位
+     */
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = null;
 
     /**
      * Get the attributes that should be cast.
@@ -42,9 +53,7 @@ class OrderDetail extends Model
         return [
             'quantity' => 'integer',
             'piece_price' => 'decimal:2',
-            'subtotal' => 'decimal:2',
             'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

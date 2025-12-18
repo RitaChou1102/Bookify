@@ -68,7 +68,6 @@ function addToCart() {
     display: flex;
     gap: 40px;
     padding: 40px;
-    background-color: #fff;
     min-height: 80vh;
 }
 

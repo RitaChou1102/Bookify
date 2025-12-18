@@ -18,21 +18,41 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('complains', function (Blueprint $table) {
-            $table->unsignedBigInteger('complaint_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('order_id'); // 訂單ID
-            $table->text('content'); // 投訴內容
-            $table->dateTime('complaint_time'); // 投訴時間
-            $table->string('complaint_status')->default('0'); // 處理狀態：0=待處理，1=處理中，2=已解決
-            $table->text('result')->nullable(); // 處理結果
-            $table->timestamps();
+        Schema::create('complaints', function (Blueprint $table) {
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束：關聯到 orders 表
-            $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('restrict');
-            
-            // 建立索引
-            $table->index('order_id');
-            $table->index('complaint_status');
+            // 1. 主鍵
+            $table->id('complaint_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('order_id');
+
+            // 3. 投訴內容
+            // SQL: TEXT NOT NULL
+            $table->text('content');
+
+            // 4. 時間與狀態
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('complaint_time')->useCurrent();
+
+            // SQL: ENUM('pending','in_progress', 'resolved') NOT NULL DEFAULT 'pending'
+            $table->enum('complaint_status', ['pending', 'in_progress', 'resolved'])->default('pending');
+
+            // SQL: TEXT DEFAULT NULL
+            $table->text('result')->nullable();
+
+            // 5. 建立索引
+            $table->index('order_id', 'idx_complaint_order');
+
+            // 6. 外鍵約束
+            // SQL: CONSTRAINT `fk_complaint_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`order_id`) ON DELETE CASCADE
+            $table->foreign('order_id', 'fk_complaint_order')
+                  ->references('order_id')
+                  ->on('orders')
+                  ->onDelete('cascade');
+
+            // 注意：根據 schema，complaints 表沒有 timestamps
         });
     }
 
@@ -41,7 +61,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('complains');
+        Schema::dropIfExists('complaints');
     }
 };
 

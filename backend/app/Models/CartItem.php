@@ -33,6 +33,11 @@ class CartItem extends Model
     ];
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -43,8 +48,6 @@ class CartItem extends Model
             'quantity' => 'integer',
             'price' => 'decimal:2',
             'subtotal' => 'decimal:2',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

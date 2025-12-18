@@ -20,6 +20,11 @@ class Review extends Model
     protected $table = 'reviews';
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -45,8 +50,6 @@ class Review extends Model
             'rating' => 'integer',
             'review_time' => 'datetime',
             'reply_time' => 'datetime',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

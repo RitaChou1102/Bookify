@@ -8,22 +8,31 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
-     * 說明：建立管理員資料表
-     * 設計原理：
-     * - 管理員表是獨立存在的，有自己的登入系統
-     * - admin_id 作為主鍵
-     * - login_id 必須唯一，用於登入驗證
-     * - 可以選擇性地關聯到 users 表（如果管理員也是系統使用者）
      */
     public function up(): void
     {
         Schema::create('admins', function (Blueprint $table) {
-            $table->unsignedBigInteger('admin_id')->autoIncrement()->primary();
-            $table->string('login_id')->unique(); // 管理員登入ID，唯一
-            $table->string('password'); // 密碼（Laravel 會自動 hash）
-            $table->string('name'); // 管理員名稱
-            $table->timestamps();
+            // 1. 設定編碼
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
+
+            // 2. 主鍵 (簡寫語法，等同於 unsignedBigInteger + autoIncrement + primary)
+            $table->id('admin_id');
+
+            // 3. Login ID
+            $table->string('login_id', 191)->unique();
+
+            // 4. Name
+            $table->string('name', 191);
+
+            // 5. Password
+            $table->string('password', 255);
+
+            // 6. 時間戳記
+            // 建議 Laravel 專案保留此欄位。
+            // $table->timestamps(); 
+
+            $table->rememberToken();
         });
     }
 
@@ -35,4 +44,3 @@ return new class extends Migration
         Schema::dropIfExists('admins');
     }
 };
-

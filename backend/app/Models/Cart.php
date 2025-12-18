@@ -20,6 +20,11 @@ class Cart extends Model
     protected $table = 'carts';
 
     /**
+     * 不使用 timestamps（根據 schema）
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -29,11 +34,11 @@ class Cart extends Model
     ];
 
     /**
-     * 取得購物車的會員
+     * 取得購物車的會員（注意：根據 schema，member_id 外鍵指向 users 表）
      */
-    public function member()
+    public function user()
     {
-        return $this->belongsTo(Member::class, 'member_id', 'member_id');
+        return $this->belongsTo(User::class, 'member_id', 'user_id');
     }
 
     /**

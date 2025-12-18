@@ -19,22 +19,42 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('reports', function (Blueprint $table) {
-            $table->unsignedBigInteger('report_id')->autoIncrement()->primary();
-            $table->unsignedBigInteger('admin_id'); // 管理員ID
-            $table->date('generation_date'); // 生成日期
-            $table->string('report_type'); // 報表種類
-            $table->date('time_period_start'); // 報表區間（起）
-            $table->date('time_period_end'); // 報表區間（末）
-            $table->text('stats_data'); // 統計數據（可以用 JSON 格式）
-            $table->timestamps();
+            $table->charset = 'utf8mb4';
+            $table->collation = 'utf8mb4_unicode_ci';
 
-            // 外鍵約束：關聯到 admins 表
-            $table->foreign('admin_id')->references('admin_id')->on('admins')->onDelete('restrict');
-            
-            // 建立索引
-            $table->index('admin_id');
-            $table->index('generation_date');
-            $table->index('report_type');
+            // 1. 主鍵
+            $table->id('report_id');
+
+            // 2. 外鍵欄位
+            $table->unsignedBigInteger('admin_id')->nullable();
+
+            // 3. 報表資訊
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('generation_date')->useCurrent();
+
+            // SQL: ENUM('sales_summary', 'inventory_status', 'user_activity', 'complaint_analysis') NOT NULL
+            $table->enum('report_type', ['sales_summary', 'inventory_status', 'user_activity', 'complaint_analysis']);
+
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('time_period_start')->useCurrent();
+
+            // SQL: DATETIME DEFAULT CURRENT_TIMESTAMP
+            $table->dateTime('time_period_end')->useCurrent();
+
+            // SQL: TEXT DEFAULT NULL
+            $table->text('stats_data')->nullable();
+
+            // 4. 建立索引
+            $table->index('admin_id', 'idx_report_admin');
+
+            // 5. 外鍵約束
+            // SQL: CONSTRAINT `fk_report_admin` FOREIGN KEY (`admin_id`) REFERENCES `admins`(`admin_id`) ON DELETE SET NULL
+            $table->foreign('admin_id', 'fk_report_admin')
+                  ->references('admin_id')
+                  ->on('admins')
+                  ->onDelete('set null');
+
+            // 注意：根據 schema，reports 表沒有 timestamps
         });
     }
 
