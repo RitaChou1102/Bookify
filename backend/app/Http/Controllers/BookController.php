@@ -21,7 +21,15 @@ class BookController extends Controller
     public function show($id)
     {
         // 撈出書籍，並連同作者、類別、廠商、所有圖片一起撈出來
-        $book = Book::with(['author', 'category', 'business', 'images'])->find($id);
+        $book = Book::with([
+            'author',
+            'category',
+            'business',
+            'images',
+            'reviews',
+            ])
+            ->withCount('reviews')
+            ->find($id);
 
         if (!$book) {
             return response()->json(['message' => '找不到該書籍'], 404);
@@ -61,12 +69,14 @@ class BookController extends Controller
             'author_id' => 'required|exists:authors,author_id',
             'category_id' => 'required|exists:book_categories,category_id',
             'isbn' => 'required',
+            'edition' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'description' => 'nullable',
             'publish_date' => 'required|date',
             'publisher' => 'required',
             'condition' => 'required|in:new,used',
+            'listing' => 'boolean',
         ]);
 
         $book = $user->business->books()->create($validated);
@@ -92,12 +102,13 @@ class BookController extends Controller
     public function destroy(Request $request, $id)
     {
         $book = Book::findOrFail($id);
-        
-        if ($request->user()->business->business_id !== $book->business_id) {
-            return response()->json(['message' => '無權刪除此書籍'], 403);
+        $user = $request->user();
+        $isAdmin = Auth::guard('admin')->check();
+        $isOwner = $user && $user->business && ($user->business->business_id === $book->business_id);
+        if ($isAdmin || $isOwner) {
+            $book->delete();
+            return response()->json(['message' => '書籍已刪除']);
         }
-
-        $book->delete();
-        return response()->json(['message' => '書籍已刪除']);
+        return response()->json(['message' => '無權限刪除此書籍'], 403);
     }
 }

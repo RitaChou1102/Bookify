@@ -25,19 +25,19 @@ class Book extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'author_id',
-        'isbn',
-        'publish_date',
-        'edition',
-        'publisher',
-        'description',
-        'price',
-        'condition',
-        'category_id',
-        'business_id',
-        'stock',
-        'listing',
+        'name',           // 書名
+        'author_id',      // 作者 ID
+        'isbn',           // ISBN 碼
+        'publish_date',   // 出版日期
+        'edition',        // 版本
+        'publisher',      // 出版商
+        'description',    // 描述
+        'price',          // 價格
+        'condition',      // 書況 (new/used)
+        'category_id',    // 分類 ID
+        'business_id',    // 商家 ID
+        'stock',          // 庫存
+        'listing',        // 是否上架
     ];
 
     /**
