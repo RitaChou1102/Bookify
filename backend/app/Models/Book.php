@@ -50,8 +50,6 @@ class Book extends Model
             'publish_date' => 'date',
             'price' => 'decimal:2',
             'listing' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 
