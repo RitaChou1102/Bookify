@@ -15,8 +15,8 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookCategoryController;
-use App\Http\Controllers\ComplainController;
-
+use App\Http\Controllers\ComplainAdminController;
+use App\Http\Controllers\ComplainUserController;
 /*
 |--------------------------------------------------------------------------
 | 1. 公開 API (Public) - 任何人皆可訪問
@@ -111,7 +111,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:admin:all'])->gro
 
     // --- 業務管理 ---
     Route::post('/ban-user', [AdminController::class, 'banUser']); // 封鎖
-    Route::put('/complains/{id}/resolve', [AdminController::class, 'resolveComplain']); // 處理客訴
+    Route::patch('/complains/{id}/in-progress', [ComplainAdminController::class, 'markAsInProgress']); // 處理中
+    Route::put('/complains/{id}/resolve', [ComplainAdminController::class, 'resolveComplain']); // 處理客訴
     Route::get('/reports', [AdminController::class, 'getReports']); // 報表
 
     // --- [新增] 作者管理 (Admin) ---

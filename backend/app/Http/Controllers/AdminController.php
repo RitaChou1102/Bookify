@@ -37,40 +37,7 @@ class AdminController extends Controller
         return response()->json(['message' => '使用者已封鎖', 'data' => $blacklist]);
     }
 
-    // 1. 管理員點開投訴時呼叫
-    public function markAsInProgress($id)
-    {
-        $complain = Complain::findOrFail($id);
 
-        // 只有在 pending 狀態才需要改為處理中
-        if ($complain->complaint_status === 'pending') {
-            $complain->update([
-                'complaint_status' => 'in_progress'
-            ]);
-        }
-
-        return response()->json([
-            'message' => '投訴已進入處理中狀態',
-            'data' => $complain
-        ]);
-    }
-
-    // 2. 管理員輸入處理結果並點擊「送出」時呼叫
-    public function resolveComplain(Request $request, $id)
-    {
-        $request->validate([
-            'result' => 'required|string'
-        ]);
-        $complain = Complain::findOrFail($id);
-
-        $complain->update([
-            'result' => $request->result,
-            'complaint_status' => 'resolved' // 狀態改為已解決
-        ]);
-        return response()->json([
-            'message' => '投訴已成功處理完畢'
-        ]);
-    }
 
     // 查看報表
     public function getReports()

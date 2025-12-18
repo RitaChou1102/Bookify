@@ -6,7 +6,7 @@ use App\Models\Complain;
 use App\Models\Order;
 use Illuminate\Http\Request;
 
-class ComplainController extends Controller
+class ComplainUserController extends Controller
 {
     // 會員提交投訴
     public function store(Request $request)
@@ -17,7 +17,7 @@ class ComplainController extends Controller
         ]);
 
         $order = Order::findOrFail($request->order_id);
-        
+
         // 驗證是否為該會員的訂單
         if ($order->member_id !== $request->user()->member->member_id) {
             return response()->json(['message' => '無權投訴此訂單'], 403);
