@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('login_id', 191)->unique();
 
             // 4. Name
+            // 注意：對於 business 角色，name 欄位存儲的是商店名稱（不是個人名稱）
             $table->string('name', 191);
 
             // 5. Email

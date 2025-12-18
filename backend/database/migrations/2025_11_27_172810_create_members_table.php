@@ -11,7 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 資料表名稱確認為 'members'
         Schema::create('members', function (Blueprint $table) {
             $table->charset = 'utf8mb4';
             $table->collation = 'utf8mb4_unicode_ci';

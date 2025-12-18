@@ -62,11 +62,21 @@ class DatabaseSeeder extends Seeder
 
         $businessUser1 = DB::table('users')->insertGetId([
             'login_id' => 'business001',
-            'name' => '王老闆',
+            'name' => '科技書店', // 商店名稱（不是個人名稱）
             'email' => 'business001@bookify.test',
             'password' => Hash::make('password123'),
             'phone' => '0933333333',
             'address' => '台北市大安區敦化南路1段',
+            'role' => 'business',
+        ]);
+
+        $businessUser2 = DB::table('users')->insertGetId([
+            'login_id' => 'business002',
+            'name' => '文學書坊', // 商店名稱
+            'email' => 'business002@bookify.test',
+            'password' => Hash::make('password123'),
+            'phone' => '0944444444',
+            'address' => '台北市信義區信義路5段',
             'role' => 'business',
         ]);
 
@@ -93,9 +103,21 @@ class DatabaseSeeder extends Seeder
         // 4. 建立廠商（Businesses）
         // 說明：廠商也是使用者的子類型，通過 user_id 關聯
         // 注意：根據 schema，businesses 表沒有 timestamps
+        // 注意：store_name 現在與 users.name 保持一致（商店名稱）
         $business1 = DB::table('businesses')->insertGetId([
             'user_id' => $businessUser1,
+            'store_name' => '科技書店', // 店名（與 users.name 保持一致）
             'bank_account' => '1234567890123456', // 銀行帳號
+            'email' => 'business1@example.com',
+            'phone' => '0912345678',
+        ]);
+
+        $business2 = DB::table('businesses')->insertGetId([
+            'user_id' => $businessUser2,
+            'store_name' => '文學書坊', // 店名（與 users.name 保持一致）
+            'bank_account' => '9876543210987654', // 銀行帳號
+            'email' => 'business2@example.com',
+            'phone' => '0923456789',
         ]);
 
         // 5. 建立作者（Authors）
@@ -183,6 +205,55 @@ class DatabaseSeeder extends Seeder
             'listing' => 1,
         ]);
 
+        // 廠商2的書籍（用於測試拆單功能）
+        $book4 = DB::table('books')->insertGetId([
+            'name' => '解憂雜貨店',
+            'author_id' => $author3,
+            'isbn' => '9789573277184',
+            'publish_date' => '2020-05-15',
+            'edition' => 1,
+            'publisher' => '皇冠文化',
+            'description' => '東野圭吾溫馨療癒作品',
+            'price' => 350.00,
+            'condition' => 'new',
+            'category_id' => $category3,
+            'business_id' => $business2,
+            'stock' => 40,
+            'listing' => 1, // 上架
+        ]);
+
+        $book5 = DB::table('books')->insertGetId([
+            'name' => '1Q84',
+            'author_id' => $author2,
+            'isbn' => '9789573277195',
+            'publish_date' => '2019-08-20',
+            'edition' => 1,
+            'publisher' => '時報出版',
+            'description' => '村上春樹長篇小說',
+            'price' => 550.00,
+            'condition' => 'new',
+            'category_id' => $category2,
+            'business_id' => $business2,
+            'stock' => 25,
+            'listing' => 1, // 上架
+        ]);
+
+        $book6 = DB::table('books')->insertGetId([
+            'name' => '天龍八部',
+            'author_id' => $author1,
+            'isbn' => '9789573277206',
+            'publish_date' => '2021-01-10',
+            'edition' => 1,
+            'publisher' => '遠流出版',
+            'description' => '金庸武俠經典之作',
+            'price' => 480.00,
+            'condition' => 'new',
+            'category_id' => $category1,
+            'business_id' => $business2,
+            'stock' => 35,
+            'listing' => 1, // 上架
+        ]);
+
         // 8. 建立圖片（Images）
         // 說明：圖片關聯到書籍，一個書籍可以有多張圖片
         // 注意：根據 schema，images 表沒有 timestamps，欄位名稱是 image_index
@@ -201,6 +272,21 @@ class DatabaseSeeder extends Seeder
                 'book_id' => $book3,
                 'image_index' => 0,
                 'image_url' => 'https://example.com/images/book3_cover.jpg',
+            ],
+            [
+                'book_id' => $book4,
+                'image_index' => 0,
+                'image_url' => 'https://example.com/images/book4_cover.jpg',
+            ],
+            [
+                'book_id' => $book5,
+                'image_index' => 0,
+                'image_url' => 'https://example.com/images/book5_cover.jpg',
+            ],
+            [
+                'book_id' => $book6,
+                'image_index' => 0,
+                'image_url' => 'https://example.com/images/book6_cover.jpg',
             ],
         ]);
 
@@ -228,9 +314,9 @@ class DatabaseSeeder extends Seeder
         // 10. 建立購物車（Carts）
         // 說明：每個會員有一個購物車
         // 注意：根據 schema，carts 表沒有 timestamps
-        // 重要：Cart 的 member_id 外鍵指向 users.user_id，不是 members.member_id
+        // 重要：Cart 的 member_id 外鍵指向 members.member_id
         $cart1 = DB::table('carts')->insertGetId([
-            'member_id' => $memberUser1, // 指向 users.user_id
+            'member_id' => $member1, // 指向 members.member_id
         ]);
 
         // 11. 建立購物車項目（Cart Items）
@@ -353,5 +439,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('管理員帳號：admin / admin123');
         $this->command->info('會員帳號：member001@bookify.test / password123');
         $this->command->info('廠商帳號：business001@bookify.test / password123');
+        $this->command->info('廠商2帳號：business002@bookify.test / password123');
     }
 }

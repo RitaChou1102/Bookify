@@ -16,17 +16,17 @@ return new class extends Migration
             // 1. 主鍵 cart_id
             $table->id('cart_id');
 
-            // 2. Member ID (注意：這裡雖然叫 member_id，但 SQL 定義是指向 users 表)
+            // 2. Member ID (外鍵指向 members.member_id)
             $table->unsignedBigInteger('member_id');
 
             // 3. 建立一般索引 (對應 SQL: KEY `idx_cart_member`)
             $table->index('member_id', 'idx_cart_member');
 
             // 4. 設定外鍵約束
-            // 對應 SQL: CONSTRAINT `fk_cart_member` FOREIGN KEY (`member_id`) REFERENCES `users`(`user_id`)
+            // 對應 SQL: CONSTRAINT `fk_cart_member` FOREIGN KEY (`member_id`) REFERENCES `members`(`member_id`)
             $table->foreign('member_id', 'fk_cart_member')
-                  ->references('user_id')
-                  ->on('users')
+                  ->references('member_id')
+                  ->on('members')
                   ->onDelete('cascade');
 
             // $table->timestamps();
