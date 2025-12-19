@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // [新增] 必須加入這行，下面的 Auth::guard 才能運作
 
 class BookController extends Controller
 {
