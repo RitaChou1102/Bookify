@@ -44,17 +44,19 @@ class AuthTokenTest extends TestCase
                  ]);
     }
 
-/**
+    /**
      * 測試攜帶有效 Token 訪問受保護的 Profile 路由
      */
     public function test_authenticated_user_can_access_profile()
     {
-        // 1. 準備：建立使用者與關聯資料
+        // 1. 準備
         $user = User::factory()->create(['role' => 'member']);
-        Member::create(['user_id' => $user->user_id]); 
         
-        // [修正] 不要寫死 'member_id' => 1，而是使用 $user->user_id
-        Cart::create(['member_id' => $user->user_id]); 
+        // [修改] 必須接收建立好的 Member 物件，才能拿到 member_id
+        $member = Member::create(['user_id' => $user->user_id]); 
+        
+        // [修改] 使用 $member->member_id 來建立購物車
+        Cart::create(['member_id' => $member->member_id]);
 
         // 產生 Token
         $token = $user->createToken('test_token')->plainTextToken;

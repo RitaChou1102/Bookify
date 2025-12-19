@@ -47,8 +47,7 @@ class CartController extends Controller
                 ], 403);
             }
 
-            // 取得購物車（注意：根據 schema，Cart 的 member_id 外鍵指向 users 表）
-            $cart = Cart::firstOrCreate(['member_id' => $user->user_id]);
+            $cart = Cart::firstOrCreate(['member_id' => $user->member->member_id]);
 
             // 計算購物車統計資訊（使用 SQL 聚合函數，在資料庫層面計算，避免載入所有資料到記憶體）
             $totalAmount = $cart->items()->sum('subtotal');
@@ -166,7 +165,7 @@ class CartController extends Controller
 
         // 取得或建立購物車
         // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
-        $cart = Cart::firstOrCreate(['member_id' => $user->user_id]);
+        $cart = Cart::firstOrCreate(['member_id' => $user->member->member_id]);
         
         // 取得書籍資訊
         $book = Book::findOrFail($validated['book_id']);
@@ -292,6 +291,8 @@ class CartController extends Controller
             ]);
 
         $user = $request->user();
+        // [新增] 先取得正確的 member_id
+        $memberId = $user->member->member_id;
         
         // 確保是會員
         if (!$user->member) {
@@ -304,13 +305,13 @@ class CartController extends Controller
         // 取得購物車項目並同時檢查權限（使用 join 避免額外查詢）
         // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
         $item = CartItem::with(['book', 'cart'])
-            ->whereHas('cart', function($query) use ($user) {
-                $query->where('member_id', $user->user_id);
+            ->whereHas('cart', function($query) use ($memberId) {
+                $query->where('member_id', $memberId);
             })
             ->findOrFail($id);
         
         // 檢查是否為自己的購物車項目（已經在 whereHas 中驗證，這裡可以省略，但保留以確保邏輯清晰）
-        if ($item->cart->member_id !== $user->user_id) {
+        if ($item->cart->member_id !== $memberId) {
             return response()->json([
                 'message' => '無權限',
                 'error' => '您只能修改自己的購物車項目'
@@ -385,7 +386,9 @@ class CartController extends Controller
     public function removeItem(Request $request, $id)
     {
         $user = $request->user();
-        
+        // [新增]
+        $memberId = $user->member->member_id;
+
         // 確保是會員
         if (!$user->member) {
             return response()->json([
@@ -397,13 +400,13 @@ class CartController extends Controller
         // 取得購物車項目並同時檢查權限（使用 join 避免額外查詢）
         // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
         $item = CartItem::with(['book', 'cart'])
-            ->whereHas('cart', function($query) use ($user) {
-                $query->where('member_id', $user->user_id);
+            ->whereHas('cart', function($query) use ($memberId) {
+                $query->where('member_id', $memberId);
             })
             ->findOrFail($id);
         
         // 檢查是否為自己的購物車項目（已經在 whereHas 中驗證，這裡可以省略，但保留以確保邏輯清晰）
-        if ($item->cart->member_id !== $user->user_id) {
+        if ($item->cart->member_id !== $memberId) {
             return response()->json([
                 'message' => '無權限',
                 'error' => '您只能移除自己的購物車項目'
@@ -450,7 +453,7 @@ class CartController extends Controller
 
         // 取得購物車
         // 注意：根據 schema，Cart 的 member_id 外鍵指向 users 表
-        $cart = Cart::where('member_id', $user->user_id)->first();
+        $cart = Cart::where('member_id', $user->member->member_id)->first();
         
         if (!$cart) {
             // 購物車不存在，表示已經是空的

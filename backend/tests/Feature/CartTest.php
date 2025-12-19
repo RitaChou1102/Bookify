@@ -18,6 +18,7 @@ class CartTest extends TestCase
     protected $user;
     protected $token;
     protected $book;
+    protected $member;
 
     /**
      * 每個測試執行前的準備工作
@@ -26,9 +27,11 @@ class CartTest extends TestCase
     {
         parent::setUp();
 
-        // 1. 建立會員 (User + Member)
+        // 1. 建立會員
         $this->user = User::factory()->create(['role' => 'member']);
-        Member::create(['user_id' => $this->user->user_id]);
+        
+        // [修改] 儲存 member 實例
+        $this->member = Member::create(['user_id' => $this->user->user_id]);
 
         // 2. 登入並取得 Token
         $this->token = $this->user->createToken('test_token')->plainTextToken;
@@ -37,7 +40,6 @@ class CartTest extends TestCase
         $businessUser = User::factory()->create(['role' => 'business']);
         $business = Business::create([
             'user_id' => $businessUser->user_id, 
-            'store_name' => 'Test Store', 
             'bank_account' => '123'
         ]);
         
@@ -81,8 +83,7 @@ class CartTest extends TestCase
             ]);
 
         // 驗證資料庫
-        // 注意 Cart 的 member_id 是指向 User ID
-        $cart = Cart::where('member_id', $this->user->user_id)->first();
+        $cart = Cart::where('member_id', $this->member->member_id)->first();
         $this->assertNotNull($cart);
         $this->assertDatabaseHas('cart_items', [
             'cart_id' => $cart->cart_id,
@@ -115,7 +116,7 @@ class CartTest extends TestCase
     public function test_can_view_cart()
     {
         // 先手動建立一個購物車項目
-        $cart = Cart::create(['member_id' => $this->user->user_id]);
+        $cart = Cart::create(['member_id' => $this->member->member_id]);
         CartItem::create([
             'cart_id' => $cart->cart_id,
             'book_id' => $this->book->book_id,
@@ -130,7 +131,7 @@ class CartTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'member_id' => $this->user->user_id,
+                'member_id' => $this->member->member_id,
                 'items' => [
                     [
                         'book_id' => $this->book->book_id,
@@ -151,7 +152,7 @@ class CartTest extends TestCase
     public function test_can_update_cart_item_quantity()
     {
         // 準備資料
-        $cart = Cart::create(['member_id' => $this->user->user_id]);
+        $cart = Cart::create(['member_id' => $this->member->member_id]);
         $item = CartItem::create([
             'cart_id' => $cart->cart_id,
             'book_id' => $this->book->book_id,
@@ -180,7 +181,7 @@ class CartTest extends TestCase
      */
     public function test_can_remove_item_from_cart()
     {
-        $cart = Cart::create(['member_id' => $this->user->user_id]);
+        $cart = Cart::create(['member_id' => $this->member->member_id]);
         $item = CartItem::create([
             'cart_id' => $cart->cart_id,
             'book_id' => $this->book->book_id,
@@ -204,7 +205,7 @@ class CartTest extends TestCase
      */
     public function test_can_clear_cart()
     {
-        $cart = Cart::create(['member_id' => $this->user->user_id]);
+        $cart = Cart::create(['member_id' => $this->member->member_id]);
         // 建立兩個項目
         CartItem::create(['cart_id' => $cart->cart_id, 'book_id' => $this->book->book_id, 'quantity' => 1, 'price' => 500]);
         // 假設有第二本書...這裡簡單重複用同一本模擬多筆資料，或再 create 一本
