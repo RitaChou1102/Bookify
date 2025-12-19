@@ -80,8 +80,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);
 
     // --- 客訴與優惠券 ---
-    Route::post('/complains', [ComplainController::class, 'store']);
-    Route::get('/complains', [ComplainController::class, 'index']);
+    // [修正] 改用 ComplainUserController
+    Route::post('/complains', [ComplainUserController::class, 'store']);
+    Route::get('/complains', [ComplainUserController::class, 'index']);
     Route::get('/coupons/validate/{code}', [CouponController::class, 'validateCode']);
 
     // --- 廠商專區 (Business Only) ---
