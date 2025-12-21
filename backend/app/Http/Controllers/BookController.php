@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // [新增] 必須加入這行，下面的 Auth::guard 才能運作
 
 class BookController extends Controller
 {
@@ -103,9 +102,16 @@ class BookController extends Controller
     public function destroy(Request $request, $id)
     {
         $book = Book::findOrFail($id);
-        $user = $request->user();
-        $isAdmin = Auth::guard('admin')->check();
-        $isOwner = $user && $user->business && ($user->business->business_id === $book->business_id);
+        $user = $request->user(); // 這裡取到的可能是 User 物件，也可能是 Admin 物件
+        
+        // [修正重點] 改用 tokenCan 來檢查是否有管理員權限
+        // 注意：Auth::guard('admin')->check() 在純 Token API 模式下通常會失效
+        $isAdmin = $user->tokenCan('admin:all');
+        
+        // 檢查是否為書籍擁有者
+        // 這裡加個簡單判斷：如果 $user 沒有 business 屬性 (例如 Admin)，就視為 false
+        $isOwner = $user->business && ($user->business->business_id === $book->business_id);
+        
         if ($isAdmin || $isOwner) {
             $book->delete();
             return response()->json(['message' => '書籍已刪除']);

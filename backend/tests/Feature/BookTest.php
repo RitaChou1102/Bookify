@@ -9,6 +9,8 @@ use App\Models\Author;
 use App\Models\BookCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\Admin; // [新增]
+use Illuminate\Support\Facades\Hash; // [新增]
 
 class BookTest extends TestCase
 {
@@ -208,6 +210,32 @@ class BookTest extends TestCase
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->businessToken])
                          ->deleteJson("/api/books/{$this->book->book_id}");
 
+        $response->assertStatus(200)
+                 ->assertJson(['message' => '書籍已刪除']);
+
+        $this->assertDatabaseMissing('books', ['book_id' => $this->book->book_id]);
+    }
+
+    /**
+     * 測試：管理員可以刪除任何書籍
+     */
+    public function test_admin_can_delete_any_book()
+    {
+        // 1. 建立管理員
+        $admin = Admin::create([
+            'name' => 'Super Admin',
+            'login_id' => 'admin_delete_' . rand(1000, 9999),
+            'password' => Hash::make('password'),
+        ]);
+        
+        // 2. 發給他 Token (權限: admin:all)
+        $token = $admin->createToken('admin_token', ['admin:all'])->plainTextToken;
+
+        // 3. 執行刪除 (刪除 $this->book, 這本書是 setup 裡建立的, 屬於 business)
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
+                         ->deleteJson("/api/books/{$this->book->book_id}");
+
+        // 4. 驗證
         $response->assertStatus(200)
                  ->assertJson(['message' => '書籍已刪除']);
 
