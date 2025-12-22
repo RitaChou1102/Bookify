@@ -10,6 +10,9 @@ import Cart from '../page/cart.vue'
 import VendorProducts from '../page/VendorProducts.vue'
 import UserProfile from '../page/UserProfile.vue'
 import VendorOrders from '../page/VendorOrders.vue'
+import Orders from '../page/Orders.vue'
+import OrderDetail from '../page/OrderDetail.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -63,6 +66,16 @@ const router = createRouter({
       path: '/profile', 
       name: 'user-profile', 
       component: UserProfile 
+    },
+    {
+      path: '/orders',
+      name: 'orders',
+      component: Orders
+    },
+    {
+      path: '/orders/:orderId',
+      name: 'order-detail',
+      component: OrderDetail
     },
     { 
       path: '/vendor/orders', 
