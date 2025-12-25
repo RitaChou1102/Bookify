@@ -42,7 +42,9 @@ class SearchController extends Controller
     public function history(Request $request)
     {
         return SearchHistory::where('member_id', $request->user()->member->member_id)
-                            ->orderByDesc('search_time')
+                            ->select('keyword', DB::raw('MAX(search_time) as last_search_time'))
+                            ->groupBy('keyword')
+                            ->orderByDesc('last_search_time')
                             ->take(10)
                             ->get();
     }
