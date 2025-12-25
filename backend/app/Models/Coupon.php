@@ -85,9 +85,12 @@ class Coupon extends Model
     public function isAvailable(): bool
     {
         $now = now();
-        return $this->start_date <= $now 
-            && $this->end_date >= $now 
-            && $this->used_count < $this->usage_limit;
+        if ($this->is_deleted) return false;
+
+        $isTimeValid = ($this->start_date <= $now) && (is_null($this->end_date) || $this->end_date >= $now);
+        $hasQuota = is_null($this->usage_limit) || $this->used_count < $this->usage_limit;
+
+        return isTimeValid && hasQuota;
     }
 }
 

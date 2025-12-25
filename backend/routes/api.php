@@ -84,6 +84,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/complains', [ComplainUserController::class, 'store']);
     Route::get('/complains', [ComplainUserController::class, 'index']);
     Route::get('/coupons/validate/{code}', [CouponController::class, 'validateCode']);
+    Route::get('/coupons/business/{businessId}', [CouponController::class, 'getBusinessCoupons']);
 
     // --- 廠商專區 (Business Only) ---
     // 注意：這裡還是 User 表，只是 role='business'，所以放在這裡沒問題
@@ -92,7 +93,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/books/{id}', [BookController::class, 'update']);
     Route::delete('/books/{id}', [BookController::class, 'destroy']);
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
-    Route::get('/coupons/business/{businessId}', [CouponController::class, 'getBusinessCoupons']);
+    Route::post('/coupons/', [CouponController::class, 'store']);
+    Route::put('/coupons/{id}',[CouponController::class, 'update']);
 });
 
 
