@@ -22,6 +22,9 @@ class ReviewController extends Controller
         $hasBought = Order::where('order_id', $request->order_id)
                           ->where('member_id', $request->user()->member->member_id)
                           ->where('order_status', Order::STATUS_COMPLETED)
+                          ->whereHas('details', function ($query) use ($request) {
+                              $query->where('book_id', $request->book_id);
+                          })
                           ->exists();
 
         if (!$hasBought) {
@@ -29,7 +32,17 @@ class ReviewController extends Controller
             // return response()->json(['message' => '您尚未購買此書或訂單未完成'], 403);
         }
 
-        $review = Review::create($request->all() + ['review_time' => now()]);
+        $review = Review::updateOrCreate(
+                [
+                    'book_id'  => $request->book_id,
+                    'order_id' => $request->order_id,
+                ],
+                [
+                    'rating'      => $request->rating,
+                    'comment'     => $request->comment,
+                    'review_time' => now(), // 更新時也刷新評論時間
+                ]
+            );
         return response()->json(['message' => '評價已送出', 'data' => $review]);
     }
 

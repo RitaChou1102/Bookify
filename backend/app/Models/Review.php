@@ -53,6 +53,10 @@ class Review extends Model
         ];
     }
 
+    protected $attributes = [
+        'rating' => 5,
+    ];
+
     /**
      * 取得評價的書籍
      */
