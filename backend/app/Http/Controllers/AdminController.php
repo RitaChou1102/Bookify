@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Blacklist;
 use App\Models\Report;
-use App\Models\Complain;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller

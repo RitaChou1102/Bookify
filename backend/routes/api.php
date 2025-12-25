@@ -112,9 +112,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:admin:all'])->gro
 
     // --- 業務管理 ---
     Route::post('/ban-user', [AdminController::class, 'banUser']); // 封鎖
+    Route::get('/reports', [AdminController::class, 'getReports']); // 報表
+
+    // --- 業務管理(客訴) ---
     Route::patch('/complains/{id}/in-progress', [ComplainAdminController::class, 'markAsInProgress']); // 處理中
     Route::put('/complains/{id}/resolve', [ComplainAdminController::class, 'resolveComplain']); // 處理客訴
-    Route::get('/reports', [AdminController::class, 'getReports']); // 報表
 
     // --- [新增] 作者管理 (Admin) ---
     Route::post('/authors', [AuthorController::class, 'store']);       // 新增作者
