@@ -41,6 +41,6 @@ class AdminController extends Controller
     // 查看報表
     public function getReports()
     {
-        return Report::all();
+        return Report::orderBy('generation_date', 'desc')->get();
     }
 }
