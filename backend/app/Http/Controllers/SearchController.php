@@ -11,11 +11,11 @@ class SearchController extends Controller
     // 進階搜尋並記錄歷史
     public function search(Request $request)
     {
-        $keyword = $request->input('keyword');
+        $keyword = trim($request->query('keyword'));
         $user = $request->user();
 
         // 記錄搜尋歷史 (如果是會員)
-        if ($user && $user->member) {
+        if ($user && $user->member && filled($keyword) && $request->query('page', 1) == 1) {
             SearchHistory::create([
                 'member_id' => $user->member->member_id,
                 'keyword' => $keyword,
@@ -24,10 +24,16 @@ class SearchController extends Controller
         }
 
         // 執行搜尋
-        $books = Book::where('name', 'like', "%{$keyword}%")
-                     ->orWhere('description', 'like', "%{$keyword}%")
-                     ->with('author')
-                     ->get();
+        $books = Book::where('listing', true)
+            ->where(function($query) use ($keyword) {
+                $query->where('name', 'like', "%{$keyword}%")
+                      ->orWhereHas('author', function($q) use ($keyword) {
+                          $q->where('name', 'like', "%{$keyword}%");
+                      });
+            })
+            ->with(['author', 'coverImage'])
+            ->paginate(20)
+            ->withQueryString(); // 每頁 20 筆
 
         return response()->json($books);
     }

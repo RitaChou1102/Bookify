@@ -26,7 +26,7 @@ use App\Http\Controllers\ComplainUserController;
 // 書籍相關
 Route::get('/books', [BookController::class, 'index']);           // 瀏覽書籍
 Route::get('/books/{id}', [BookController::class, 'show']);       // 書籍詳情
-Route::get('/books/search/{keyword}', [BookController::class, 'search']); // 搜尋
+Route::get('/guest/search', [SearchController::class, 'search']); // 搜尋
 
 // 基礎資訊
 Route::get('/authors', [AuthorController::class, 'index']);
@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // --- 搜尋與評價 ---
     Route::get('/search/history', [SearchController::class, 'history']);
-    Route::post('/search', [SearchController::class, 'search']);
+    Route::get('/user/search', [SearchController::class, 'search']);
     Route::post('/reviews', [ReviewController::class, 'store']);
 
     // --- 客訴與優惠券 ---
