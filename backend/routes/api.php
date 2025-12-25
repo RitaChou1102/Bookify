@@ -127,4 +127,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:admin:all'])->gro
     Route::post('/categories', [BookCategoryController::class, 'store']);    // 新增分類
     Route::put('/categories/{id}', [BookCategoryController::class, 'update']); // 修改分類
     Route::delete('/categories/{id}', [BookCategoryController::class, 'destroy']); // 刪除分類
+
+    // --- 刪除書籍 ---
+    Route::delete('/books/{id}', [BookController::class, 'destroy']);
+
 });

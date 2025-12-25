@@ -233,7 +233,7 @@ class BookTest extends TestCase
 
         // 3. 執行刪除 (刪除 $this->book, 這本書是 setup 裡建立的, 屬於 business)
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
-                         ->deleteJson("/api/books/{$this->book->book_id}");
+                         ->deleteJson("/api/admin/books/{$this->book->book_id}");
 
         // 4. 驗證
         $response->assertStatus(200)
