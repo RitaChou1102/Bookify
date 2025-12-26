@@ -15,6 +15,7 @@ import OrderDetail from '../page/OrderDetail.vue'
 import AdminDashboard from '../page/AdminDashboard.vue'
 import AdminUsers from '../page/AdminUsers.vue'
 import AdminComplaints from '../page/AdminComplaints.vue'
+import Search from '../page/Search.vue'
 
 
 const router = createRouter({
@@ -24,6 +25,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: Home
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: Search
     },
     {
       path: '/login',
