@@ -87,8 +87,8 @@ class BookTest extends TestCase
      */
     public function test_public_can_search_books()
     {
-        $response = $this->getJson("/api/guest/search/Original");
-
+        $response = $this->getJson("/api/guest/search?keyword=Original");
+        
         $response->assertStatus(200)
                  ->assertJsonFragment(['name' => 'Original Book']);
     }

@@ -18,10 +18,18 @@ class ReviewController extends Controller
             'comment' => 'required|string'
         ]);
 
+        $user = $request->user();
+
+        // 嚴格檢查 $user 和 $user->member 是否存在
+        // 防止如果是 Admin 或是資料異常的 User 呼叫此 API 時報 500 錯誤
+        if (!$user || !$user->member) {
+             return response()->json(['message' => '只有會員可以評價'], 403);
+        }
+
         // 檢查是否真的有買過這本書且訂單已完成
         $hasBought = Order::where('order_id', $request->order_id)
-                          ->where('member_id', $request->user()->member->member_id)
-                          ->where('order_status', Order::STATUS_COMPLETED)
+                          ->where('member_id', $user->member->member_id)
+                          ->where('order_status', 'Completed')          //Order 模型 (Order.php) 裡面並沒有定義 STATUS_COMPLETED 這個常數
                           ->whereHas('details', function ($query) use ($request) {
                               $query->where('book_id', $request->book_id);
                           })
@@ -29,7 +37,7 @@ class ReviewController extends Controller
 
         if (!$hasBought) {
             // 開發測試階段可暫時註解此檢查，方便測試
-            // return response()->json(['message' => '您尚未購買此書或訂單未完成'], 403);
+            return response()->json(['message' => '您尚未購買此書或訂單未完成'], 403);
         }
 
         $review = Review::updateOrCreate(
