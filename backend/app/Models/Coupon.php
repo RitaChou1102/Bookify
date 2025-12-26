@@ -90,7 +90,7 @@ class Coupon extends Model
         $isTimeValid = ($this->start_date <= $now) && (is_null($this->end_date) || $this->end_date >= $now);
         $hasQuota = is_null($this->usage_limit) || $this->used_count < $this->usage_limit;
 
-        return isTimeValid && hasQuota;
+        return $isTimeValid && $hasQuota;
     }
 }
 

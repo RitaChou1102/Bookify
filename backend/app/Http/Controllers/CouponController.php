@@ -24,7 +24,7 @@ class CouponController extends Controller
     }
     
     // 取得廠商的所有優惠券
-    public function getBusinessCoupons($businessId)
+    public function getBusinessCoupons(Request $request, $businessId)
     {
         $user = $request->user();
         $role = $user->role;
@@ -79,7 +79,7 @@ class CouponController extends Controller
 
         // 1. 權限檢查：只有該老闆可以改
         $user = $request->user();
-        if (empty($user->business?->business_id;) || $user->business?->business_id != $coupon->business_id) {
+        if (!$user->business || $user->business->business_id != $coupon->business_id) {
             return response()->json(['message' => '無權修改此優惠券'], 403);
         }
 
