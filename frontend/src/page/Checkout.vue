@@ -61,6 +61,28 @@
             <span>運費</span>
             <span>NT$ {{ shippingFee }}</span>
           </div>
+          <div class="price-row">
+            <span>優惠券</span>
+            <span>
+              <template v-if="selectedCoupon">
+                - NT$ {{ selectedCoupon.discount }}
+              </template>
+              <template v-else>
+                尚未套用
+              </template>
+            </span>
+          </div>
+
+          <el-button
+            text
+            type="primary"
+            @click="showCouponDialog = true"
+          >
+            選擇優惠券
+          </el-button>
+
+          <el-divider />
+
           <div class="price-row total">
             <span>總金額</span>
             <span class="total-price">NT$ {{ total }}</span>
@@ -72,12 +94,19 @@
         </el-card>
       </div>
     </div>
+
+    <CouponDialog
+      :visible="showCouponDialog"
+      @close="showCouponDialog = false"
+      @select="selectedCoupon = $event"
+    />
   </div>
 </template>
 
 <script setup>
 import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import CouponDialog from '@/components/CouponDialog.vue'
 
 const router = useRouter()
 
@@ -89,20 +118,30 @@ const form = reactive({
   payment: 'CreditCard'
 })
 
-// 2. 模擬購物車資料 (因為購物車功能還沒做，先用假資料撐場面)
+// 2. 優惠券相關
+const showCouponDialog = ref(false)
+const selectedCoupon = ref(null)
+
+const discount = computed(() => {
+  return selectedCoupon.value ? selectedCoupon.value.discount : 0
+})
+
+// 3. 模擬購物車資料 (因為購物車功能還沒做，先用假資料撐場面)
 const mockCartItems = ref([
   { id: 1, name: '被討厭的勇氣', price: 300, quantity: 1, image: 'https://via.placeholder.com/60' },
   { id: 2, name: '原子習慣', price: 330, quantity: 2, image: 'https://via.placeholder.com/60' }
 ])
 
-// 3. 計算金額
+// 4. 計算金額
 const subtotal = computed(() => {
   return mockCartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 })
 const shippingFee = 60
-const total = computed(() => subtotal.value + shippingFee)
+const total = computed(() =>
+  subtotal.value + shippingFee - discount.value
+)
 
-// 4. 送出訂單
+// 5. 送出訂單
 const submitOrder = () => {
   if (!form.name || !form.phone || !form.address) {
     alert('請填寫完整收件資訊')

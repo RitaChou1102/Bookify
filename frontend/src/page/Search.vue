@@ -14,17 +14,11 @@
       <div class="search-results">
         <!-- 有結果 -->
         <div v-if="books.length > 0" class="book-grid">
-          <!-- 之後這裡會換成 <BookCard /> -->
-          <div
-            class="book-card"
+          <BookCard
             v-for="book in books"
             :key="book.id"
-          >
-            <img :src="book.image" alt="" />
-            <h3 class="title">{{ book.title }}</h3>
-            <p class="author">{{ book.author }}</p>
-            <p class="price">NT$ {{ book.price }}</p>
-          </div>
+            :book="book"
+          />
         </div>
 
         <!-- 空狀態 -->
@@ -39,6 +33,7 @@
 </template>
 
 <script setup>
+import BookCard from '@/components/BookCard.vue'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
