@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\SearchHistory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
@@ -17,7 +18,8 @@ class SearchController extends Controller
         // 記錄搜尋歷史 (如果是會員)
         if ($user && $user->member && filled($keyword) && $request->query('page', 1) == 1) {
             SearchHistory::create([
-                'member_id' => $user->member->member_id,
+                // [修正] member_id 外鍵是指向 users.user_id，不是 members.member_id
+                'member_id' => $user->user_id,
                 'keyword' => $keyword,
                 'search_time' => now()
             ]);
@@ -41,7 +43,8 @@ class SearchController extends Controller
     // 取得個人搜尋歷史
     public function history(Request $request)
     {
-        return SearchHistory::where('member_id', $request->user()->member->member_id)
+        // [修正] 改用 $request->user()->user_id
+        return SearchHistory::where('member_id', $request->user()->user_id)
                             ->select('keyword', DB::raw('MAX(search_time) as last_search_time'))
                             ->groupBy('keyword')
                             ->orderByDesc('last_search_time')
