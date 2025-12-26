@@ -1,39 +1,30 @@
-// 模擬 API 回傳熱門書籍資料
+import axios from 'axios';
+
+// 建立一個 axios 實體，設定基礎網址
+const apiClient = axios.create({
+  // 讀取 docker-compose 或 .env 設定的環境變數
+  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+  // 如果需要攜帶 Cookie (Sanctum 認證)，請開啟此選項
+  // withCredentials: true, 
+});
+
+// 取得熱門書籍 (對應後端 GET /api/books)
 export function getHotBooks() {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: [
-          { 
-            id: 1, 
-            name: "被討厭的勇氣", 
-            author: "岸見一郎", 
-            price: 300, 
-            image: "https://via.placeholder.com/150" 
-          },
-          { 
-            id: 2, 
-            name: "原子習慣", 
-            author: "James Clear", 
-            price: 330, 
-            image: "https://via.placeholder.com/150" 
-          },
-          { 
-            id: 3, 
-            name: "底層邏輯", 
-            author: "劉潤", 
-            price: 350, 
-            image: "https://via.placeholder.com/150" 
-          },
-          { 
-            id: 4, 
-            name: "蛤蟆先生去看心理師", 
-            author: "Robert de Board", 
-            price: 280, 
-            image: "https://via.placeholder.com/150" 
-          }
-        ]
-      })
-    }, 500)
-  })
+  // 這裡假設你的後端路由是 /api/books
+  // 如果你的 BookController 回傳格式是 { data: [...] }，axios 會包在 response.data 裡
+  return apiClient.get('/books')
+    .then(response => {
+       // 根據你的後端回傳結構回傳資料
+       // 假設 Laravel Resource 回傳的是 { data: [...] }
+       // axios 的 response 結構是 { data: { data: [...] }, status: 200, ... }
+       return response.data; 
+    })
+    .catch(error => {
+      console.error('API Error:', error);
+      throw error;
+    });
 }

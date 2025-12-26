@@ -57,7 +57,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE: "http://backend:8000" # 使用容器網路名稱
+      # [修正] 瀏覽器要透過 localhost 才能連到後端容器映射出的 8000 port
+      VITE_API_BASE: "http://localhost:8000/api"
     depends_on:
       - backend
 
