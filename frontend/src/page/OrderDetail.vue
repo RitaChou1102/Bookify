@@ -1,164 +1,161 @@
 <template>
-  <div class="order-detail-page">
-    <div class="order-detail-container">
-      <h1 class="title">訂單詳情</h1>
+  <div class="order-detail-container">
+    <div class="page-header">
+      <el-button @click="$router.back()">
+        <el-icon><ArrowLeft /></el-icon> 返回
+      </el-button>
+      <h2>訂單詳情 #{{ orderId }}</h2>
+    </div>
 
-      <!-- 訂單不存在 -->
-      <div v-if="!order.orderId" class="not-found">
-        <p>找不到此訂單</p>
-        <el-button @click="goBack">返回訂單列表</el-button>
+    <el-card class="mb-4">
+      <div class="info-row">
+        <span><strong>下單日期：</strong> {{ order.date }}</span>
+        <span>
+          <strong>狀態：</strong> 
+          <el-tag :type="getStatusType(order.status)">{{ getStatusText(order.status) }}</el-tag>
+        </span>
+        <span><strong>總金額：</strong> <span class="price">NT$ {{ order.total }}</span></span>
       </div>
-
-      <!-- 訂單資訊 -->
-      <div v-else>
-      <div class="order-info">
-        <p><strong>訂單編號：</strong>{{ order.orderId }}</p>
-        <p><strong>下單日期：</strong>{{ order.date }}</p>
-        <p>
-          <strong>狀態：</strong>
-          <el-tag :type="statusType(order.status)">
-            {{ order.status }}
-          </el-tag>
-        </p>
-        <p><strong>總金額：</strong> NT$ {{ orderTotal }}</p>
+      <div class="info-row mt-2">
+        <span><strong>收件人：</strong> {{ order.customerName }}</span>
+        <span><strong>地址：</strong> {{ order.customerAddress }}</span>
       </div>
+    </el-card>
 
-      <!-- 商品列表 -->
-      <el-table :data="order.items" style="width: 100%; margin-top: 24px">
-        <el-table-column prop="title" label="書名" />
-        <el-table-column prop="price" label="單價" width="120">
+    <el-card>
+      <h3>購買商品</h3>
+      <el-table :data="order.items" style="width: 100%">
+        <el-table-column label="商品資訊">
           <template #default="scope">
-            NT$ {{ scope.row.price }}
+            <div class="item-info">
+              <img :src="scope.row.image" class="item-thumb"/>
+              <div>
+                <div class="item-name">{{ scope.row.name }}</div>
+                <div class="item-price">NT$ {{ scope.row.price }}</div>
+              </div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="qty" label="數量" width="100" />
+        <el-table-column prop="quantity" label="數量" width="100" />
         <el-table-column label="小計" width="120">
+          <template #default="scope">NT$ {{ scope.row.price * scope.row.quantity }}</template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="150" v-if="order.status === 'completed'">
           <template #default="scope">
-            NT$ {{ scope.row.price * scope.row.qty }}
+            <el-button 
+              v-if="!scope.row.hasReviewed" 
+              type="primary" 
+              plain 
+              size="small" 
+              @click="openReviewDialog(scope.row)"
+            >
+              撰寫評價
+            </el-button>
+            <el-tag v-else type="success" size="small">已評價</el-tag>
           </template>
         </el-table-column>
       </el-table>
+    </el-card>
 
-      <!-- 返回 -->
-      <div class="actions">
-        <el-button @click="goBack">返回訂單列表</el-button>
+    <el-dialog v-model="reviewDialogVisible" title="商品評價" width="500px">
+      <div v-if="currentItem">
+        <p class="mb-2">您正在評價：<strong>{{ currentItem.name }}</strong></p>
+        
+        <el-form>
+          <el-form-item label="評分">
+            <el-rate v-model="reviewForm.rating" show-text />
+          </el-form-item>
+          <el-form-item label="心得">
+            <el-input 
+              v-model="reviewForm.comment" 
+              type="textarea" 
+              rows="4" 
+              placeholder="這本書讀起來如何？分享您的心得..." 
+            />
+          </el-form-item>
+        </el-form>
       </div>
-      </div>
-    </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="reviewDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitReview">送出評價</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue"
-import { useRoute, useRouter } from "vue-router"
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { ArrowLeft } from '@element-plus/icons-vue'
 
 const route = useRoute()
-const router = useRouter()
+const orderId = route.params.id
 
-// 假訂單資料庫（模擬後端資料，之後改成 API）
-const mockOrders = [
-  {
-    orderId: "ORDER-20240301-001",
-    date: "2024-03-01",
-    status: "Completed",
-    items: [
-      { title: "被討厭的勇氣", price: 300, qty: 1 },
-      { title: "原子習慣", price: 330, qty: 2 }
-    ]
-  },
-  {
-    orderId: "ORDER-20240305-002",
-    date: "2024-03-05",
-    status: "Paid",
-    items: [
-      { title: "原子習慣", price: 300, qty: 1 }
-    ]
-  },
-  {
-    orderId: "ORDER-20240308-003",
-    date: "2024-03-08",
-    status: "Pending",
-    items: [
-      { title: "被討厭的勇氣", price: 280, qty: 1 },
-      { title: "人生勝利聖經", price: 170, qty: 1 }
-    ]
-  }
-]
-
-// 當前訂單
+// 模擬訂單資料 (包含 hasReviewed 欄位判斷是否已評價)
 const order = ref({
-  orderId: "",
-  date: "",
-  status: "",
-  items: []
+  id: 'ORD-003',
+  date: '2025-12-06',
+  total: 1200,
+  status: 'completed',
+  customerName: '王小明',
+  customerAddress: '台北市信義區...',
+  items: [
+    { id: 1, name: '被討厭的勇氣', price: 300, quantity: 4, image: 'https://via.placeholder.com/50', hasReviewed: false },
+    { id: 5, name: 'Clean Code', price: 500, quantity: 1, image: 'https://via.placeholder.com/50', hasReviewed: true }
+  ]
 })
 
-// 動態計算總金額
-const orderTotal = computed(() => {
-  return order.value.items.reduce((sum, item) => sum + item.price * item.qty, 0)
+// 評價相關變數
+const reviewDialogVisible = ref(false)
+const currentItem = ref(null)
+const reviewForm = reactive({
+  rating: 5,
+  comment: ''
 })
 
-onMounted(() => {
-  const orderId = route.params.orderId
+const getStatusType = (status) => status === 'completed' ? 'success' : (status === 'shipped' ? 'primary' : 'warning')
+const getStatusText = (status) => ({ completed: '已完成', shipped: '已出貨', pending: '處理中' }[status] || status)
 
-  // 根據 orderId 查找對應的訂單
-  const foundOrder = mockOrders.find(o => o.orderId === orderId)
-  
-  if (foundOrder) {
-    order.value = { ...foundOrder }
-  } else {
-    // 訂單不存在，保持空狀態
-    console.warn(`訂單 ${orderId} 不存在`)
-  }
-})
-
-function goBack() {
-  router.push("/orders")
+const openReviewDialog = (item) => {
+  currentItem.value = item
+  reviewForm.rating = 5
+  reviewForm.comment = ''
+  reviewDialogVisible.value = true
 }
 
-function statusType(status) {
-  if (status === "Completed") return "success"
-  if (status === "Paid") return "warning"
-  if (status === "Pending") return "info"
-  return ""
+const submitReview = () => {
+  if (reviewForm.rating === 0) {
+    alert('請給予評分！')
+    return
+  }
+
+  // 呼叫 API: POST /api/reviews
+  console.log('送出評價:', {
+    bookId: currentItem.value.id,
+    orderId: order.value.id,
+    ...reviewForm
+  })
+
+  // 更新前端狀態 (標記為已評價)
+  const item = order.value.items.find(i => i.id === currentItem.value.id)
+  if(item) item.hasReviewed = true
+
+  reviewDialogVisible.value = false
+  alert('感謝您的評價！')
 }
 </script>
 
 <style scoped>
-.order-detail-page {
-  padding: 40px 16px;
-}
-
-.order-detail-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 24px;
-  border-radius: 8px;
-}
-
-.title {
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.order-info p {
-  margin: 6px 0;
-}
-
-.actions {
-  margin-top: 24px;
-}
-
-.not-found {
-  text-align: center;
-  padding: 60px 20px;
-  color: #999;
-}
-
-.not-found p {
-  font-size: 18px;
-  margin-bottom: 20px;
-}
+.order-detail-container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+.page-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+.info-row { display: flex; gap: 20px; flex-wrap: wrap; color: #555; }
+.price { color: #f56c6c; font-weight: bold; }
+.item-info { display: flex; align-items: center; gap: 10px; }
+.item-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+.mb-2 { margin-bottom: 10px; }
+.mt-2 { margin-top: 10px; }
+.mb-4 { margin-bottom: 20px; }
 </style>

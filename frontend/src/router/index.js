@@ -12,6 +12,9 @@ import UserProfile from '../page/UserProfile.vue'
 import VendorOrders from '../page/VendorOrders.vue'
 import Orders from '../page/Orders.vue'
 import OrderDetail from '../page/OrderDetail.vue'
+import AdminDashboard from '../page/AdminDashboard.vue'
+import AdminUsers from '../page/AdminUsers.vue'
+import AdminComplaints from '../page/AdminComplaints.vue'
 
 
 const router = createRouter({
@@ -81,6 +84,21 @@ const router = createRouter({
       path: '/vendor/orders', 
       name: 'vendor-orders', 
       component: VendorOrders 
+    },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboard
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: AdminUsers
+    },
+    {
+      path: '/admin/complaints',
+      name: 'admin-complaints',
+      component: AdminComplaints
     }
   ]
 })
