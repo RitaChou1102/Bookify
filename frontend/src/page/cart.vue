@@ -22,7 +22,17 @@
         <!-- 右欄：結帳資訊 -->
         <div class="cart-right">
             <p class="checkout-title">結帳資訊</p>
-            <p class="checkout-hint">（尚未實作）</p>
+
+            <p>商品總數：{{ cartStore.totalCount }}</p>
+            <p>商品小計：NT$ {{ cartStore.totalPrice }}</p>
+
+            <el-button
+                type="primary"
+                class="checkout-btn"
+                @click="goCheckout"
+            >
+                前往結帳
+            </el-button>
         </div>
         </div>
     </div>
@@ -31,6 +41,15 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useCartStore } from '@/store/cartStore'
+
+const router = useRouter()
+const cartStore = useCartStore()
+
+function goCheckout() {
+  router.push('/checkout')
+}
 
 const cartItems = ref([
     {

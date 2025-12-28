@@ -5,6 +5,7 @@ import CloudinaryUploadTest from '../page/CloudinaryUploadTest.vue'
 import BookDetail from '../page/BookDetail.vue'
 import Register from '../page/Register.vue'
 import Checkout from '../page/Checkout.vue'
+import OrderSuccess from '../page/OrderSuccess.vue'
 import ProductUpload from '../page/ProductUpload.vue'
 import Cart from '../page/cart.vue'
 import VendorProducts from '../page/VendorProducts.vue'
@@ -60,6 +61,11 @@ const router = createRouter({
       path: '/checkout',
       name: 'checkout',
       component: Checkout
+    },
+    {
+      path: '/order/success',
+      name: 'order-success',
+      component: OrderSuccess
     },
     {
       path: '/product/upload',

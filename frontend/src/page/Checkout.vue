@@ -147,16 +147,17 @@ const submitOrder = () => {
     alert('請填寫完整收件資訊')
     return
   }
-  
-  // 這裡之後會呼叫後端 API (/api/orders)
-  console.log('訂單送出:', {
-    user: form,
-    items: mockCartItems.value,
-    total: total.value
-  })
 
-  alert('訂單已成立！將跳轉回首頁')
-  router.push('/')
+  // 模擬訂單編號（Demo 用）
+  const mockOrderId = 'ORD-' + Date.now()
+
+  router.push({
+    path: '/order/success',
+    query: {
+      orderId: mockOrderId,
+      total: total.value
+    }
+  })
 }
 </script>
 
