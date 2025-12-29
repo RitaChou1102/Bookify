@@ -17,18 +17,15 @@
           <input id="password" v-model="form.password" type="password" placeholder="請輸入密碼" required />
         </div>
 
-        <div class="form-group">
-          <label for="role" class="dev-label"><span class="badge">DEV</span> 模擬身分</label>
-          <select id="role" v-model="form.role">
-            <option value="Member">一般會員</option>
-            <option value="Business">廠商</option>
-            <option value="Admin">管理員</option>
-          </select>
-        </div>
+        <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
         <div class="actions">
-          <el-button type="primary" native-type="submit" class="w-full" :loading="loading">登入</el-button>
-          <el-button @click="goToRegister" class="w-full mt-2">註冊新帳號</el-button>
+          <button type="submit" class="submit-btn" :disabled="loading">
+            {{ loading ? '登入中...' : '登入' }}
+          </button>
+          <button type="button" @click="goToRegister" class="link-btn">
+            註冊新帳號
+          </button>
         </div>
       </form>
     </div>
@@ -39,49 +36,52 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
-import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const loading = ref(false)
+const errorMessage = ref('')
+
 const form = reactive({
   loginId: '',
-  password: '',
-  role: 'Member'
+  password: ''
 })
 
 const handleLogin = async () => {
   if (!form.loginId || !form.password) {
-    ElMessage.warning('請輸入帳號密碼')
+    alert('請輸入帳號密碼')
     return
   }
 
   loading.value = true
+  errorMessage.value = ''
+
   try {
     // 調用登入 API
+    // 注意：後端需要 login_id，我們這裡做個對應
     const res = await login({
       login_id: form.loginId,
       password: form.password
     })
 
-    // 保存 token 到 localStorage
-    if (res.data.token) {
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('user', JSON.stringify(res.data.user))
+    // 登入成功處理
+    const { token, user, role } = res.data
+
+    if (token) {
+      // 1. 存 Token
+      localStorage.setItem('token', token)
+      // 2. 存使用者資訊 (轉成字串)
+      localStorage.setItem('user', JSON.stringify(user))
+      // 3. 存身分 (方便之後判斷是否顯示管理員後台按鈕)
+      localStorage.setItem('role', role || user.role)
       
-      ElMessage.success('登入成功！')
+      alert('登入成功！')
       
-      // 登入成功後，跳轉回首頁
+      // 根據身分跳轉 (可選，目前先統一回首頁)
       router.push('/')
-    } else {
-      ElMessage.error('登入失敗：未收到 token')
     }
   } catch (err) {
     console.error('登入失敗:', err)
-    if (err.response?.data?.message) {
-      ElMessage.error(err.response.data.message)
-    } else {
-      ElMessage.error('登入失敗，請檢查帳號密碼')
-    }
+    errorMessage.value = err.response?.data?.message || '登入失敗，請檢查帳號密碼'
   } finally {
     loading.value = false
   }
@@ -93,6 +93,7 @@ const goToRegister = () => {
 </script>
 
 <style scoped>
+/* 樣式保持與註冊頁一致 */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -112,8 +113,15 @@ const goToRegister = () => {
 .brand-header h1 { font-size: 2rem; color: #2563eb; margin: 0; font-weight: bold; }
 .form-group { margin-bottom: 1.5rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500; }
-input, select { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
-.badge { background-color: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
-.w-full { width: 100%; }
-.mt-2 { margin-top: 0.5rem; }
+input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+.actions { display: flex; flex-direction: column; gap: 10px; }
+.submit-btn {
+  width: 100%; padding: 10px; background-color: #2563eb; color: white;
+  border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;
+}
+.submit-btn:disabled { background-color: #93c5fd; }
+.link-btn {
+  background: none; border: none; color: #666; cursor: pointer; text-decoration: underline;
+}
+.error-msg { color: #dc2626; font-size: 0.9rem; text-align: center; margin-bottom: 1rem; }
 </style>

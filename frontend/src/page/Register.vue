@@ -33,16 +33,22 @@
         </div>
 
         <div class="form-group">
-          <label for="role" class="dev-label"><span class="badge">DEV</span> 註冊身分</label>
+          <label for="role">註冊身分</label>
           <select id="role" v-model="form.role">
-            <option value="Member">一般會員</option>
-            <option value="Business">廠商</option>
+            <option value="member">一般會員 (Member)</option>
+            <option value="business">廠商 (Business)</option>
           </select>
         </div>
 
+        <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
+
         <div class="actions">
-          <el-button type="primary" native-type="submit" class="w-full">註冊</el-button>
-          <el-button @click="goToLogin" class="w-full mt-2">返回登入</el-button>
+          <button type="submit" class="submit-btn" :disabled="loading">
+            {{ loading ? '註冊中...' : '註冊' }}
+          </button>
+          <button type="button" @click="goToLogin" class="link-btn">
+            已有帳號？返回登入
+          </button>
         </div>
       </form>
     </div>
@@ -50,32 +56,56 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { register } from '@/api/auth' // 1. 記得引入 API
 
 const router = useRouter()
+const loading = ref(false)
+const errorMessage = ref('')
+
 const form = reactive({
   name: '',
   loginId: '',
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'Member'
+  role: 'member' // 2. 預設值改為小寫，配合後端驗證
 })
 
-const handleRegister = () => {
-  // 簡單的密碼確認檢查
+const handleRegister = async () => {
+  // 基本檢查
   if (form.password !== form.confirmPassword) {
     alert('兩次密碼輸入不一致！')
     return
   }
 
-  // 這裡之後會串接後端 API
-  console.log('Register data:', form)
-  alert('註冊成功！(模擬)')
-  
-  // 註冊成功後跳轉回登入頁
-  router.push('/login')
+  try {
+    loading.value = true
+    errorMessage.value = ''
+
+    // 3. 準備資料：把前端的 camelCase 轉成後端要的 snake_case
+    const payload = {
+      name: form.name,
+      login_id: form.loginId, // 👈 關鍵轉換！後端要 login_id
+      email: form.email,
+      password: form.password,
+      role: form.role // 確保這裡是小寫
+    }
+
+    // 4. 真的呼叫後端
+    await register(payload)
+    
+    alert('註冊成功！請登入')
+    router.push('/login')
+
+  } catch (error) {
+    console.error('註冊失敗:', error)
+    // 顯示後端回傳的錯誤 (例如 Email 重複)
+    errorMessage.value = error.response?.data?.message || '註冊失敗，請檢查資料是否重複'
+  } finally {
+    loading.value = false
+  }
 }
 
 const goToLogin = () => {
@@ -84,6 +114,7 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
+/* 樣式保持不變 */
 .register-container {
   min-height: 100vh;
   display: flex;
@@ -104,8 +135,10 @@ const goToLogin = () => {
 .brand-header h1 { font-size: 2rem; color: #2563eb; margin: 0; font-weight: bold; }
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; margin-bottom: 0.3rem; color: #374151; font-weight: 500; font-size: 0.9rem; }
-input, select { width: 100%; padding: 0.6rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
-.badge { background-color: #f59e0b; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
-.w-full { width: 100%; }
-.mt-2 { margin-top: 0.5rem; }
+input, select { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+.actions { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+.submit-btn { width: 100%; padding: 10px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; }
+.submit-btn:disabled { background-color: #93c5fd; }
+.link-btn { background: none; border: none; color: #666; cursor: pointer; text-decoration: underline; }
+.error-msg { color: #dc2626; font-size: 0.9rem; text-align: center; margin-top: 10px; }
 </style>
