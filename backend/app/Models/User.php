@@ -79,4 +79,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\SearchHistory::class, 'member_id', 'user_id');
     }
+
+    // 取得該使用者的黑名單紀錄
+    public function blacklist()
+    {
+        // 一個使用者在 blacklist 表中應該只有一筆有效的封鎖紀錄
+        return $this->hasOne(Blacklist::class, 'blocked_userid', 'user_id');
+    }
+
+    // 快速判斷使用者是否被封鎖
+    public function isBanned(): bool
+    {
+        return $this->blacklist()->exists();
+    }
 }

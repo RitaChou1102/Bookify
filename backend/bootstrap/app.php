@@ -23,6 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureJsonEncoding::class,
         ]);
     })
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'check.blacklist' => \App\Http\Middleware\CheckBlacklist::class,
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
