@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminAuthController; 
 use App\Http\Controllers\AdminController;     
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\BlackListController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReviewController;
@@ -113,7 +114,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:admin:all'])->gro
     Route::get('/me', [AdminAuthController::class, 'me']); // 查看自己的管理員資料
 
     // --- 業務管理 ---
-    Route::post('/ban-user', [AdminController::class, 'banUser']); // 封鎖
+    Route::get('/blacklist', [BlackListController::class, 'index']);
+    Route::post('/ban-user', [BlackListController::class, 'banUser']); // 封鎖
+    Route::delete('/unban-user/{user_id}', [BlackListController::class, 'unbanUser']); // 解除封鎖
     Route::get('/reports', [AdminController::class, 'getReports']); // 報表
 
     // --- 業務管理(客訴) ---
