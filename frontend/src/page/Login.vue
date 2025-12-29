@@ -27,7 +27,7 @@
         </div>
 
         <div class="actions">
-          <el-button type="primary" native-type="submit" class="w-full">登入</el-button>
+          <el-button type="primary" native-type="submit" class="w-full" :loading="loading">登入</el-button>
           <el-button @click="goToRegister" class="w-full mt-2">註冊新帳號</el-button>
         </div>
       </form>
@@ -36,23 +36,54 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { login } from '@/api/auth'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const loading = ref(false)
 const form = reactive({
   loginId: '',
   password: '',
   role: 'Member'
 })
 
-const handleLogin = () => {
-  if (form.loginId && form.password) {
-    console.log('Login success:', form)
-    // 登入成功後，跳轉回首頁
-    router.push('/')
-  } else {
-    alert('請輸入帳號密碼')
+const handleLogin = async () => {
+  if (!form.loginId || !form.password) {
+    ElMessage.warning('請輸入帳號密碼')
+    return
+  }
+
+  loading.value = true
+  try {
+    // 調用登入 API
+    const res = await login({
+      login_id: form.loginId,
+      password: form.password
+    })
+
+    // 保存 token 到 localStorage
+    if (res.data.token) {
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      
+      ElMessage.success('登入成功！')
+      
+      // 登入成功後，跳轉回首頁
+      router.push('/')
+    } else {
+      ElMessage.error('登入失敗：未收到 token')
+    }
+  } catch (err) {
+    console.error('登入失敗:', err)
+    if (err.response?.data?.message) {
+      ElMessage.error(err.response.data.message)
+    } else {
+      ElMessage.error('登入失敗，請檢查帳號密碼')
+    }
+  } finally {
+    loading.value = false
   }
 }
 

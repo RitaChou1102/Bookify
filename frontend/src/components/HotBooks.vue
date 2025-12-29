@@ -11,9 +11,14 @@
       <p class="book-author">{{ book.author?.name }}</p>
       <p class="book-price">NT$ {{ book.price }}</p>
 
-      <el-button type="primary" size="small" @click="goDetail(book.book_id)">
-        查看詳情
-      </el-button>
+      <div class="button-group">
+        <el-button type="primary" size="small" @click="goDetail(book.book_id)">
+          查看詳情
+        </el-button>
+        <el-button type="success" size="small" @click="handleAddToCart(book.book_id)">
+          加入購物車
+        </el-button>
+      </div>
     </el-card>
   </div>
 </template>
@@ -22,6 +27,8 @@
 import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { getHotBooks } from "../api/book"
+import { addToCart } from "../api/cart"
+import { ElMessage } from "element-plus"
 
 const books = ref([])
 const router = useRouter()
@@ -37,6 +44,31 @@ onMounted(async () => {
 
 function goDetail(id) {
   router.push(`/book/${id}`)
+}
+
+async function handleAddToCart(bookId) {
+  // 檢查是否登入
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning('請先登入')
+    router.push('/login')
+    return
+  }
+
+  try {
+    await addToCart(bookId, 1)
+    ElMessage.success('已加入購物車！')
+  } catch (err) {
+    console.error('加入購物車失敗:', err)
+    if (err.response?.status === 401) {
+      ElMessage.warning('請先登入')
+      router.push('/login')
+    } else if (err.response?.data?.message) {
+      ElMessage.error(err.response.data.message)
+    } else {
+      ElMessage.error('加入購物車失敗')
+    }
+  }
 }
 </script>
 
@@ -73,5 +105,15 @@ function goDetail(id) {
   margin: 6px 0;
   font-weight: bold;
   color: #409eff;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.button-group .el-button {
+  flex: 1;
 }
 </style>

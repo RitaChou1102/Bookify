@@ -22,7 +22,7 @@
         </div>
 
         <!-- 加入購物車 -->
-        <el-button type="primary" @click="addToCart">
+        <el-button type="primary" @click="handleAddToCart" :loading="loading">
         加入購物車
         </el-button>
     </div>
@@ -32,8 +32,13 @@
 
 <script setup>
 import { ref, onMounted } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 import { ElMessage } from "element-plus"
+import { addToCart } from "@/api/cart"
+
+const route = useRoute()
+const router = useRouter()
+const loading = ref(false)
 
 // 假資料（後端串好後改成 API）
 const book = ref({
@@ -45,21 +50,43 @@ const book = ref({
     image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=500&q=80" 
 })
 
-
 const qty = ref(1)
-
-// 抓網址上的 /book/:id
-const route = useRoute()
 
 onMounted(() => {
     const id = route.params.id
     console.log("書籍 ID：", id)
-  // TODO: call API → getBookById(id)
+    // TODO: call API → getBookById(id)
+    // 暫時使用 id 作為 book.id
+    book.value.id = parseInt(id) || 1
 })
 
-function addToCart() {
-  // TODO: 呼叫購物車 API
-    ElMessage.success("已加入購物車！")
+async function handleAddToCart() {
+    // 檢查是否登入
+    const token = localStorage.getItem('token')
+    if (!token) {
+        ElMessage.warning('請先登入')
+        router.push('/login')
+        return
+    }
+
+    loading.value = true
+    try {
+        await addToCart(book.value.id, qty.value)
+        ElMessage.success(`已加入 ${qty.value} 件商品到購物車！`)
+        qty.value = 1 // 重置數量
+    } catch (err) {
+        console.error('加入購物車失敗:', err)
+        if (err.response?.status === 401) {
+            ElMessage.warning('請先登入')
+            router.push('/login')
+        } else if (err.response?.data?.message) {
+            ElMessage.error(err.response.data.message)
+        } else {
+            ElMessage.error('加入購物車失敗')
+        }
+    } finally {
+        loading.value = false
+    }
 }
 </script>
 
