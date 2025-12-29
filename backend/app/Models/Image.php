@@ -54,5 +54,12 @@ class Image extends Model
     {
         return $this->belongsTo(Book::class, 'book_id', 'book_id');
     }
+    // 取得縮圖
+    public function getThumbnailUrlAttribute()
+    {
+        // 這裡可以寫邏輯將原始 URL 轉換為 Cloudinary 的縮圖轉換格式
+        // 例如將 /upload/ 替換為 /upload/w_200,c_fill/
+        return str_replace('/upload/', '/upload/w_200,c_fill/', $this->image_url);
+    }
 }
 

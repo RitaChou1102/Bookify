@@ -18,6 +18,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookCategoryController;
 use App\Http\Controllers\ComplainAdminController;
 use App\Http\Controllers\ComplainUserController;
+use App\Http\Controllers\ImageController;
 /*
 |--------------------------------------------------------------------------
 | 1. 公開 API (Public) - 任何人皆可訪問
@@ -90,12 +91,19 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     // --- 廠商專區 (Business Only) ---
     // 注意：這裡還是 User 表，只是 role='business'，所以放在這裡沒問題
     // 建議在 Controller 內部或用 Middleware 檢查 role === 'business'
+    // book
     Route::post('/books', [BookController::class, 'store']);
     Route::put('/books/{id}', [BookController::class, 'update']);
     Route::delete('/books/{id}', [BookController::class, 'destroy']);
+    // order
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    // coupons
     Route::post('/coupons/', [CouponController::class, 'store']);
     Route::put('/coupons/{id}',[CouponController::class, 'update']);
+    // Image
+    Route::post('/books/{book_id}/images', [ImageController::class, 'store']);// 批次上傳書籍圖片
+    Route::delete('/images/{image_id}', [ImageController::class, 'destroy']);// 刪除單一圖片
+    Route::patch('/images/reorder', [ImageController::class, 'reorder']);// 更新圖片排序
 });
 
 
