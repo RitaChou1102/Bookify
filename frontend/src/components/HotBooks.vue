@@ -2,16 +2,16 @@
   <div class="books-grid">
     <el-card
       v-for="book in books"
-      :key="book.id"
+      :key="book.book_id"
       class="book-card"
       shadow="hover"
     >
-      <img :src="book.image" class="book-img" />
+      <img :src="book.cover_image?.image_url || '/placeholder.jpg'" class="book-img" />
       <h3 class="book-title">{{ book.name }}</h3>
-      <p class="book-author">{{ book.author }}</p>
+      <p class="book-author">{{ book.author?.name }}</p>
       <p class="book-price">NT$ {{ book.price }}</p>
 
-      <el-button type="primary" size="small" @click="goDetail(book.id)">
+      <el-button type="primary" size="small" @click="goDetail(book.book_id)">
         查看詳情
       </el-button>
     </el-card>
