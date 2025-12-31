@@ -52,6 +52,54 @@ class Order extends Model
             'total_amount' => 'decimal:2',
             'order_time' => 'datetime',
             'shipping_fee' => 'decimal:2',
+            'payment_method' => 'string', // enum 值作為字串處理
+            'order_status' => 'string',   // enum 值作為字串處理
+        ];
+    }
+
+    /**
+     * 付款方式常數
+     */
+    const PAYMENT_METHOD_CASH = 'Cash';
+    const PAYMENT_METHOD_CREDIT_CARD = 'Credit_card';
+    const PAYMENT_METHOD_BANK_TRANSFER = 'Bank_transfer';
+
+    /**
+     * 訂單狀態常數
+     */
+    const STATUS_RECEIVED = 'Received';
+    const STATUS_PROCESSING = 'Processing';
+    const STATUS_SHIPPED = 'Shipped';
+    const STATUS_COMPLETED = 'Completed';
+    const STATUS_CANCELLED = 'Cancelled';
+
+    /**
+     * 取得所有可用的付款方式
+     * 
+     * @return array
+     */
+    public static function getPaymentMethods(): array
+    {
+        return [
+            self::PAYMENT_METHOD_CASH => '貨到付款',
+            self::PAYMENT_METHOD_CREDIT_CARD => '信用卡',
+            self::PAYMENT_METHOD_BANK_TRANSFER => '銀行轉帳',
+        ];
+    }
+
+    /**
+     * 取得所有可用的訂單狀態
+     * 
+     * @return array
+     */
+    public static function getOrderStatuses(): array
+    {
+        return [
+            self::STATUS_RECEIVED => '已接收',
+            self::STATUS_PROCESSING => '處理中',
+            self::STATUS_SHIPPED => '已出貨',
+            self::STATUS_COMPLETED => '已完成',
+            self::STATUS_CANCELLED => '已取消',
         ];
     }
 

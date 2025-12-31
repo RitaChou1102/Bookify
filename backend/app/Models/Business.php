@@ -31,7 +31,10 @@ class Business extends Model
      */
     protected $fillable = [
         'user_id',
+        'store_name',
         'bank_account',
+        'email',
+        'phone',
     ];
 
     /**

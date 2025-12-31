@@ -46,8 +46,9 @@ class AuthTest extends TestCase
         $this->assertDatabaseHas('members', ['user_id' => $user->user_id]);
 
         // 確認有建立購物車 (Cart)
-        // 注意：這裡可能會因為 AuthController 的邏輯 Bug 而報錯（詳見下方說明）
-        $this->assertDatabaseHas('carts', ['member_id' => $user->user_id]);
+        // 注意：Cart 的 member_id 外鍵指向 members.member_id
+        $member = \App\Models\Member::where('user_id', $user->user_id)->first();
+        $this->assertDatabaseHas('carts', ['member_id' => $member->member_id]);
     }
 
     /**

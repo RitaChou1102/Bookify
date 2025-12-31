@@ -45,9 +45,11 @@ class AuthController extends Controller
 
             // 3. 根據角色建立對應資料
             if ($validated['role'] === 'business') {
+                // 對於 business，name 就是商店名稱
                 Business::create([
                     'user_id' => $user->user_id,
-                    'bank_account' => '' // 暫空
+                    'store_name' => $validated['name'], // 商店名稱（與 users.name 保持一致）
+                    'bank_account' => '' // 暫空，之後可以更新
                 ]);
             } else {
                 // 預設為一般會員
@@ -191,10 +193,11 @@ class AuthController extends Controller
                         ->first();
                     
                     if ($businessData) {
+                        // 對於 business，商店名稱就是 user->name
                         $business = [
                             'business_id' => $businessData->business_id,
                             'user_id' => $businessData->user_id,
-                            'store_name' => $businessData->store_name,
+                            'store_name' => $user->name, // 使用 user->name 作為商店名稱
                             'bank_account' => $businessData->bank_account,
                         ];
                     }
@@ -249,6 +252,13 @@ class AuthController extends Controller
         ]);
 
         $user->update($validated);
+
+        // 如果是 business，同步更新 businesses 表的 store_name
+        if ($user->role === 'business' && isset($validated['name'])) {
+            DB::table('businesses')
+                ->where('user_id', $user->user_id)
+                ->update(['store_name' => $validated['name']]);
+        }
 
         return response()->json(['message' => '個人資料更新成功', 'user' => $user], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             ->header('Content-Type', 'application/json; charset=utf-8');

@@ -53,8 +53,25 @@ class OrderDetail extends Model
         return [
             'quantity' => 'integer',
             'piece_price' => 'decimal:2',
+            'subtotal' => 'decimal:2', // 虛擬欄位也需要 cast
             'created_at' => 'datetime',
         ];
+    }
+
+    /**
+     * 取得訂單明細的小計（如果虛擬欄位無法正常運作，使用此方法）
+     * 
+     * @return float
+     */
+    public function getSubtotalAttribute($value)
+    {
+        // 如果資料庫有計算好的 subtotal（虛擬欄位），直接返回
+        if ($value !== null) {
+            return (float) $value;
+        }
+        
+        // 否則手動計算
+        return (float) ($this->quantity * $this->piece_price);
     }
 
     /**

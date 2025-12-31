@@ -68,10 +68,18 @@ class User extends Authenticatable
         return $this->hasOne(\App\Models\Business::class, 'user_id', 'user_id');
     }
 
-    // 取得使用者的購物車（注意：根據 schema，Cart 的 member_id 外鍵指向 users 表）
+    // 取得使用者的購物車（透過 member 關聯，因為 Cart 的 member_id 外鍵指向 members.member_id）
     public function cart()
     {
-        return $this->hasOne(\App\Models\Cart::class, 'member_id', 'user_id');
+        // 只有會員才有購物車，透過 member 關聯取得
+        return $this->hasOneThrough(
+            \App\Models\Cart::class,
+            \App\Models\Member::class,
+            'user_id',    // Member 表的外鍵
+            'member_id',  // Cart 表的外鍵
+            'user_id',    // User 表的主鍵
+            'member_id'   // Member 表的主鍵
+        );
     }
 
     // 取得使用者的搜尋歷史（注意：根據 schema，SearchHistory 的 member_id 外鍵指向 users 表）

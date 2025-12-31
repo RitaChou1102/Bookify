@@ -44,9 +44,9 @@ class Member extends Model
     /**
      * 取得會員的購物車
      */
-    public function getCartAttribute()
+    public function cart()
     {
-        return $this->user ? $this->user->cart : null;
+        return $this->hasOne(\App\Models\Cart::class, 'member_id', 'member_id');
     }
 
     /**

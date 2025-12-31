@@ -83,6 +83,7 @@ class CartTest extends TestCase
             ]);
 
         // 驗證資料庫
+        // 注意 Cart 的 member_id 是指向 Member ID
         $cart = Cart::where('member_id', $this->member->member_id)->first();
         $this->assertNotNull($cart);
         $this->assertDatabaseHas('cart_items', [
@@ -181,7 +182,7 @@ class CartTest extends TestCase
      */
     public function test_can_remove_item_from_cart()
     {
-        $cart = Cart::create(['member_id' => $this->member->member_id]);
+        $cart = Cart::create(['member_id' => $this->user->member->member_id]);
         $item = CartItem::create([
             'cart_id' => $cart->cart_id,
             'book_id' => $this->book->book_id,

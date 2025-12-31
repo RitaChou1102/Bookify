@@ -34,11 +34,11 @@ class Cart extends Model
     ];
 
     /**
-     * 取得購物車的會員（注意：根據 schema，member_id 外鍵指向 users 表）
+     * 取得購物車的會員（注意：member_id 外鍵指向 members.member_id）
      */
-    public function user()
+    public function member()
     {
-        return $this->belongsTo(User::class, 'member_id', 'user_id');
+        return $this->belongsTo(Member::class, 'member_id', 'member_id');
     }
 
     /**

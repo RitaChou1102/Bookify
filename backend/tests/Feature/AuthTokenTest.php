@@ -51,11 +51,9 @@ class AuthTokenTest extends TestCase
     {
         // 1. 準備
         $user = User::factory()->create(['role' => 'member']);
-        
-        // [修改] 必須接收建立好的 Member 物件，才能拿到 member_id
         $member = Member::create(['user_id' => $user->user_id]); 
         
-        // [修改] 使用 $member->member_id 來建立購物車
+        // [修正] Cart 的 member_id 外鍵指向 members.member_id
         Cart::create(['member_id' => $member->member_id]);
 
         // 產生 Token
