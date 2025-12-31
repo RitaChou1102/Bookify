@@ -9,14 +9,4 @@ use Illuminate\Http\Request;
 class AdminController extends Controller
 {
     // 驗證工作交給路由層的 'auth:sanctum' middleware 處理
-
-
-
-
-
-    // 查看報表
-    public function getReports()
-    {
-        return Report::orderBy('generation_date', 'desc')->get();
-    }
 }

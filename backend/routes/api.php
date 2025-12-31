@@ -19,6 +19,7 @@ use App\Http\Controllers\BookCategoryController;
 use App\Http\Controllers\ComplainAdminController;
 use App\Http\Controllers\ComplainUserController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\ReportController;
 /*
 |--------------------------------------------------------------------------
 | 1. 公開 API (Public) - 任何人皆可訪問
@@ -98,7 +99,7 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     // order
     Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
     // coupons
-    Route::post('/coupons/', [CouponController::class, 'store']);
+    Route::post('/coupons', [CouponController::class, 'store']);
     Route::put('/coupons/{id}',[CouponController::class, 'update']);
     // Image
     Route::post('/books/{book_id}/images', [ImageController::class, 'store']);// 批次上傳書籍圖片
@@ -121,11 +122,25 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'abilities:admin:all'])->gro
     Route::post('/logout', [AdminAuthController::class, 'logout']);
     Route::get('/me', [AdminAuthController::class, 'me']); // 查看自己的管理員資料
 
-    // --- 業務管理 ---
+    // --- 黑名單 ---
     Route::get('/blacklist', [BlackListController::class, 'index']);
     Route::post('/ban-user', [BlackListController::class, 'banUser']); // 封鎖
     Route::delete('/unban-user/{user_id}', [BlackListController::class, 'unbanUser']); // 解除封鎖
-    Route::get('/reports', [AdminController::class, 'getReports']); // 報表
+
+    // --- reports ---
+    Route::prefix('reports')->group(function () {
+        // 1. 取得報表列表 (支援分頁、篩選)
+        Route::get('/', [ReportController::class, 'index']);
+
+        // 2. 生成新報表 (執行統計邏輯並儲存)
+        Route::post('/', [ReportController::class, 'store']);
+
+        // 3. 取得單一報表詳細數據 (包含 stats_data)
+        Route::get('/{id}', [ReportController::class, 'show']);
+
+        // 4. 刪除歷史報表
+        Route::delete('/{id}', [ReportController::class, 'destroy']);
+    });
 
     // --- 業務管理(客訴) ---
     Route::patch('/complains/{id}/in-progress', [ComplainAdminController::class, 'markAsInProgress']); // 處理中

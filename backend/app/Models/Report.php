@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\ReportType;
 
 class Report extends Model
 {
@@ -50,6 +51,7 @@ class Report extends Model
             'time_period_start' => 'datetime',
             'time_period_end' => 'datetime',
             'stats_data' => 'array', // JSON 自動轉換為陣列
+            'report_type' => ReportType::class,
         ];
     }
 
