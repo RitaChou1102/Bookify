@@ -1,9 +1,12 @@
+<?php
+
 namespace App\Http\Controllers;
 use App\Models\Image;
 use App\Models\Book;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ImageController extends Controller
 {
@@ -16,7 +19,7 @@ class ImageController extends Controller
         $currentUser = $request->user();
         // 1. 檢查是否為該書籍的擁有者 (Business)
         // 這裡判斷登入者 ID 是否等於書籍的 business_id
-        if (!$currentUser || $book->business_id !== $currentUser->business_id) {
+        if (!$currentUser->business || $book->business_id !== $currentUser->business->business_id) {
             return response()->json(['message' => '您無權為此書籍上傳圖片'], 403);
         }
         $request->validate([
@@ -40,8 +43,8 @@ class ImageController extends Controller
             return response()->json(['message' => '未登入'], 401);
         }
         $isAdmin = $currentUser instanceof \App\Models\Admin;
-        $isOwner = isset($currentUser->business_id) &&
-                        $image->book->business_id === $currentUser->business_id;
+        $isOwner = $currentUser->business && 
+                   ($image->book->business_id === $currentUser->business->business_id);
         if (!$isAdmin && !$isOwner) {
             return response()->json(['message' => '您無權刪除此圖片'], 403);
         }
@@ -72,31 +75,35 @@ class ImageController extends Controller
         $imageId  = $request->image_id;
         $newIndex = $request->new_index;
 
-        // 取得要移動的那張圖片
         $targetImage = Image::where('book_id', $bookId)->findOrFail($imageId);
         $oldIndex    = $targetImage->image_index;
 
-        // 如果索引沒變，直接回傳
         if ($oldIndex == $newIndex) {
             return response()->json(['message' => '索引未變動']);
         }
 
         DB::transaction(function () use ($bookId, $targetImage, $oldIndex, $newIndex) {
+            // 1. 先把目標圖片移到 -1 (暫存區)
+            $targetImage->update(['image_index' => -1]);
+
+            // 2. 執行其他圖片的位移 (加入 orderBy 防止撞車)
             if ($newIndex < $oldIndex) {
-                // 情況 A: 往前移 (例如 5 -> 2)
-                // 區間 [2, 4] 的圖片 index 都要 +1
+                // 往前移 (例如 4 -> 2)：區間 [2, 3] 的圖片都要 +1 (變 [3, 4])
+                // [修正] 必須「倒著改」(3->4, 再 2->3)，否則 2->3 會撞到原本的 3
                 Image::where('book_id', $bookId)
                     ->whereBetween('image_index', [$newIndex, $oldIndex - 1])
+                    ->orderBy('image_index', 'desc') // 關鍵：降冪更新
                     ->increment('image_index');
             } else {
-                // 情況 B: 往後移 (例如 2 -> 5)
-                // 區間 [3, 5] 的圖片 index 都要 -1
+                // 往後移 (例如 2 -> 4)：區間 [3, 4] 的圖片都要 -1 (變 [2, 3])
+                // [修正] 必須「順著改」(3->2, 再 4->3)，否則 4->3 會撞到原本的 3
                 Image::where('book_id', $bookId)
                     ->whereBetween('image_index', [$oldIndex + 1, $newIndex])
+                    ->orderBy('image_index', 'asc')  // 關鍵：升冪更新
                     ->decrement('image_index');
             }
 
-            // 最後更新目標圖片的索引
+            // 3. 最後把目標圖片從 -1 移到正確的新位置
             $targetImage->update(['image_index' => $newIndex]);
         });
 

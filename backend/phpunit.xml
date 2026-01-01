@@ -23,6 +23,12 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <env name="CACHE_DRIVER" value="array"/>
+        <env name="CLOUDINARY_UPLOAD_PRESET" value="test_preset"/>
+        <env name="CLOUDINARY_CLOUD_NAME" value="testcloud"/>
+        <env name="CLOUDINARY_API_KEY" value="123456789"/>
+        <env name="CLOUDINARY_API_SECRET" value="abcdefg"/>
+        <env name="CLOUDINARY_SECURE" value="true"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>
