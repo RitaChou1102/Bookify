@@ -29,6 +29,7 @@
         <env name="CLOUDINARY_API_KEY" value="123456789"/>
         <env name="CLOUDINARY_API_SECRET" value="abcdefg"/>
         <env name="CLOUDINARY_SECURE" value="true"/>
+        <env name="CLOUDINARY_URL" value="cloudinary://123456789:abcdefg@testcloud"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>

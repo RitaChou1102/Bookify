@@ -11,7 +11,7 @@ return [
     |
     */
 
-    'cloud_url' => null,
+    'cloud_url' => env('CLOUDINARY_URL'),
     'upload_preset' => env('CLOUDINARY_UPLOAD_PRESET'),
     'notification_url' => env('CLOUDINARY_NOTIFICATION_URL'),
     'secure' => env('CLOUDINARY_SECURE', true),
