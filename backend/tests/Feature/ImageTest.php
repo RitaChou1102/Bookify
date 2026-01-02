@@ -54,6 +54,10 @@ class ImageTest extends TestCase
             config(['cloudinary-laravel.cloud' => $fakeConfig]); // 針對某些版本直接讀 cloud node
             config(['cloudinary.cloud' => $fakeConfig]);
 
+        dump(config('cloudinary.cloud.cloud'));
+        dump(config('cloudinary.cloud'));
+        dump(config('cloudinary.cloud_url'));
+        dump(env('CLOUDINARY_URL'));
         // 1. 建立廠商資料
         $this->businessUser = User::factory()->create(['role' => 'business']);
         $this->business = Business::create([
