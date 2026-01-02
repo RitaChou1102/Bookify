@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Enum;
+use App\Enums\DiscountType;
+use App\Enums\CouponType;
 
 class Coupon extends Model
 {
@@ -60,6 +63,9 @@ class Coupon extends Model
             'usage_limit' => 'integer',
             'used_count' => 'integer',
             'is_deleted' => 'boolean',
+
+            'discount_type' => \App\Enums\DiscountType::class,
+            'coupon_type' => \App\Enums\CouponType::class,
         ];
     }
 

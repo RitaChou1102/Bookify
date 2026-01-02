@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Enums\OrderStatus;
 class Order extends Model
 {
     use HasFactory;
@@ -52,6 +52,7 @@ class Order extends Model
             'total_amount' => 'decimal:2',
             'order_time' => 'datetime',
             'shipping_fee' => 'decimal:2',
+            'order_status' => \App\Enums\OrderStatus::class,
         ];
     }
 

@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Coupon;
 use Illuminate\Http\Request;
 
+use Illuminate\Validation\Rules\Enum;
+use App\Enums\DiscountType;
+use App\Enums\CouponType;
+
 class CouponController extends Controller
 {
     // 驗證優惠券
@@ -48,13 +52,13 @@ class CouponController extends Controller
         $validated = $request->validate([
             'name'           => 'required|string|max:100',
             'code'           => 'required|string|unique:coupons,code', // 不能跟現有的重複
-            'discount_type'  => 'required|in:percent_off,fixed',
+            'discount_type'  => ['required', new Enum(DiscountType::class)],
             'discount_value' => 'required|numeric|min:0',
             'limit_price'    => 'required|numeric|min:0',
             'start_date'     => 'required|date',
             'end_date'       => 'nullable|date|after_or_equal:start_date',
             'usage_limit'    => 'nullable|integer|min:1',
-            'coupon_type'    => 'required|in:shipping,seasonal',
+            'coupon_type'    => ['required', new Enum(CouponType::class)],
         ]);
 
         // 2. 注入後台資訊（安全性：不從前端拿 business_id）
@@ -88,13 +92,13 @@ class CouponController extends Controller
             'name'           => 'sometimes|string|max:100',
             // 重點：忽略目前的 coupon_id，否則 code 沒變時會驗證失敗
             'code'           => 'sometimes|string|unique:coupons,code,' . $id . ',coupon_id',
-            'discount_type'  => 'sometimes|in:percent_off,fixed',
+            'discount_type'  => ['sometimes', new Enum(DiscountType::class)],
             'discount_value' => 'sometimes|numeric|min:0',
             'limit_price'    => 'sometimes|numeric|min:0',
             'start_date'     => 'sometimes|date',
             'end_date'       => 'sometimes|nullable|date|after_or_equal:start_date',
             'usage_limit'    => 'sometimes|nullable|integer|min:1',
-            'coupon_type'    => 'sometimes|in:shipping,seasonal',
+            'coupon_type'    => ['sometimes', new Enum(CouponType::class)],
         ]);
 
         // 3. 商業邏輯鎖定：如果已經有人用過了，建議限制不能改折扣類型與數值
