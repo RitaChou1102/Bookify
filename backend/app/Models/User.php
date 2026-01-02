@@ -92,4 +92,9 @@ class User extends Authenticatable
     {
         return $this->blacklist()->exists();
     }
+    public function books()
+    {
+        // 對應 books 資料表裡的 user_id
+        return $this->hasMany(Book::class, 'user_id');
+    }
 }

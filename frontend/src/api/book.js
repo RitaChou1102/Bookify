@@ -20,6 +20,11 @@ export function getHotBooks() {
     .then(response => response.data);
 }
 
+export function createBook(data) {
+  return apiClient.post('/books', data)
+    .then(res => res.data);
+}
+
 // --- [新增] 取得單一書籍詳情 ---
 export function getBook(id) {
   return apiClient.get(`/books/${id}`)

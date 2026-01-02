@@ -3,67 +3,71 @@
     <div class="form-container">
       <div class="page-header">
         <h1>商品上架</h1>
-        <p>廠商專用後台 / 新增書籍</p>
+        <p>賣家中心 / 新增書籍</p>
       </div>
 
-      <el-form :model="form" label-position="top" class="product-form">
+      <el-form 
+        :model="form" 
+        :rules="rules" 
+        ref="formRef" 
+        label-position="top" 
+        class="product-form"
+      >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="書籍名稱">
+            <el-form-item label="書籍名稱" prop="name">
               <el-input v-model="form.name" placeholder="輸入書名" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="作者">
+            <el-form-item label="作者" prop="author">
               <el-input v-model="form.author" placeholder="輸入作者名稱" />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="價格 (NT$)">
+          <el-col :span="12">
+            <el-form-item label="價格 (NT$)" prop="price">
               <el-input-number v-model="form.price" :min="0" class="w-full" />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
-            <el-form-item label="庫存數量">
+          <el-col :span="12">
+            <el-form-item label="庫存數量" prop="stock">
               <el-input-number v-model="form.stock" :min="1" class="w-full" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="分類">
-              <el-select v-model="form.category" placeholder="選擇分類">
-                <el-option label="商業理財" value="business" />
-                <el-option label="心理勵志" value="psychology" />
-                <el-option label="文學小說" value="fiction" />
-                <el-option label="程式設計" value="programming" />
-              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="書籍簡介">
-          <el-input v-model="form.description" type="textarea" rows="4" placeholder="請輸入書籍詳細介紹..." />
+        <el-form-item label="書籍簡介" prop="description">
+          <el-input 
+            v-model="form.description" 
+            type="textarea" 
+            rows="4" 
+            placeholder="請輸入書籍詳細介紹、書況描述..." 
+          />
         </el-form-item>
 
-        <el-form-item label="書籍封面圖片">
+        <el-form-item label="書籍封面圖片" prop="image_url">
           <div class="upload-area">
-            <el-button 
-              v-if="!form.image" 
-              type="primary" 
-              plain 
-              @click="openUploadWidget"
-              :loading="!isScriptLoaded"
-            >
-              <span v-if="isScriptLoaded">點擊上傳圖片</span>
-              <span v-else>載入上傳元件中...</span>
-            </el-button>
+            <input 
+              type="file" 
+              ref="fileInput" 
+              style="display: none" 
+              accept="image/*"
+              @change="handleFileChange"
+            />
+
+            <div v-if="!form.image_url" class="upload-placeholder" @click="triggerFileInput">
+              <el-icon class="upload-icon" :size="30"><Plus /></el-icon>
+              <div class="upload-text">點擊上傳封面圖片</div>
+              <div v-if="uploading" class="uploading-text">正在上傳中...</div>
+            </div>
 
             <div v-else class="preview-box">
-              <img :src="form.image" class="preview-img" />
+              <img :src="form.image_url" class="preview-img" />
               <div class="preview-actions">
-                <el-button type="danger" size="small" @click="form.image = ''">更換圖片</el-button>
+                <el-button type="danger" size="small" @click="resetImage">更換圖片</el-button>
               </div>
             </div>
           </div>
@@ -71,7 +75,14 @@
 
         <div class="form-actions">
           <el-button size="large" @click="router.back()">取消</el-button>
-          <el-button type="primary" size="large" @click="submitProduct">確認上架</el-button>
+          <el-button 
+            type="primary" 
+            size="large" 
+            @click="submitProduct" 
+            :loading="submitting"
+          >
+            確認上架
+          </el-button>
         </div>
       </el-form>
     </div>
@@ -79,72 +90,105 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import axios from 'axios'
+import { createBook } from '@/api/book' // 引入 API
 
 const router = useRouter()
+const formRef = ref(null)
+const fileInput = ref(null)
+const uploading = ref(false)
+const submitting = ref(false)
 
 // 表單資料
 const form = reactive({
   name: '',
   author: '',
-  price: 0,
-  stock: 10,
-  category: '',
+  price: 100,
+  stock: 1,
   description: '',
-  image: '' // 這裡會存放 Cloudinary 回傳的 URL
+  image_url: '' // 存放 Cloudinary 網址
 })
 
-// --- Cloudinary Widget 相關邏輯 (與您之前的 Test 頁面類似) ---
-const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const uploadPreset = 'bookify_unpreset_name'; // 請確認您的 Preset 名稱
-const isScriptLoaded = ref(false)
-let myWidget = null
-
-onMounted(() => {
-  // 動態載入 Cloudinary script，確保不影響全站效能
-  if (window.cloudinary) {
-    isScriptLoaded.value = true
-  } else {
-    const script = document.createElement('script')
-    script.src = 'https://upload-widget.cloudinary.com/global/all.js'
-    script.onload = () => { isScriptLoaded.value = true }
-    document.head.appendChild(script)
-  }
-})
-
-const openUploadWidget = () => {
-  if (!window.cloudinary) return;
-
-  myWidget = window.cloudinary.createUploadWidget({
-    cloudName: cloudName,
-    uploadPreset: uploadPreset,
-    sources: ['local', 'url'],
-    multiple: false, // 一次只傳一張封面
-    clientAllowedFormats: ['image'], // 只允許圖片
-  }, (error, result) => {
-    if (!error && result && result.event === "success") {
-      console.log('上傳成功:', result.info);
-      // 將回傳的圖片網址存入表單
-      form.image = result.info.secure_url; 
-    }
-  })
-  
-  myWidget.open();
+// 驗證規則
+const rules = {
+  name: [{ required: true, message: '請輸入書名', trigger: 'blur' }],
+  author: [{ required: true, message: '請輸入作者', trigger: 'blur' }],
+  price: [{ required: true, message: '請輸入價格', trigger: 'blur' }],
+  stock: [{ required: true, message: '請輸入庫存', trigger: 'blur' }],
+  image_url: [{ required: true, message: '請上傳書籍封面', trigger: 'change' }]
 }
 
-// 送出商品資料
-const submitProduct = () => {
-  if (!form.name || !form.price || !form.image) {
-    alert('請填寫完整資訊並上傳圖片')
+// 觸發檔案選擇
+const triggerFileInput = () => {
+  if (!uploading.value) {
+    fileInput.value.click()
+  }
+}
+
+// 重置圖片
+const resetImage = () => {
+  form.image_url = ''
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+// 處理檔案上傳
+const handleFileChange = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  // 驗證大小 (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.warning('圖片大小請勿超過 2MB')
     return
   }
 
-  // 這裡之後會串接後端 API (POST /api/books)
-  console.log('商品上架資料:', form)
-  
-  alert('商品上架成功！')
-  router.push('/') // 回首頁或商品列表
+  uploading.value = true
+  const formData = new FormData()
+  formData.append('image', file)
+
+  try {
+    const token = localStorage.getItem('token')
+    // 呼叫後端上傳 API
+    const res = await axios.post('/api/upload-image', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    form.image_url = res.data.url
+    ElMessage.success('圖片上傳成功！')
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('圖片上傳失敗，請稍後再試')
+  } finally {
+    uploading.value = false
+  }
+}
+
+// 送出商品資料
+const submitProduct = async () => {
+  if (!formRef.value) return
+
+  await formRef.value.validate(async (valid) => {
+    if (valid) {
+      submitting.value = true
+      try {
+        await createBook(form)
+        ElMessage.success('書籍上架成功！')
+        router.push('/') // 之後可以改導向「賣家商品列表」
+      } catch (err) {
+        console.error(err)
+        ElMessage.error(err.response?.data?.message || '上架失敗')
+      } finally {
+        submitting.value = false
+      }
+    }
+  })
 }
 </script>
 
@@ -176,13 +220,35 @@ const submitProduct = () => {
   padding: 20px;
   text-align: center;
   background-color: #fafafa;
+  min-height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.3s;
 }
-.preview-box { text-align: center; }
+.upload-area:hover { border-color: #409EFF; }
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #909399;
+}
+.upload-icon { margin-bottom: 10px; }
+.uploading-text { margin-top: 10px; color: #409EFF; font-size: 14px; }
+
+.preview-box { text-align: center; width: 100%; }
 .preview-img {
-  max-height: 200px;
+  max-height: 300px;
+  max-width: 100%;
+  object-fit: contain;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 .form-actions {
   display: flex;

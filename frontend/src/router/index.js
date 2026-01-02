@@ -70,7 +70,8 @@ const router = createRouter({
     {
       path: '/product/upload',
       name: 'product-upload',
-      component: ProductUpload
+      component: ProductUpload,
+      meta: { requiresAuth: true }
     },
     { 
       path: '/vendor/products', 

@@ -6,29 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('reviews', function (Blueprint $table) {
-            $table->id('review_id');
-            $table->unsignedBigInteger('user_id'); // 評論者
-            $table->unsignedBigInteger('book_id'); // 被評論的書
-            $table->unsignedBigInteger('order_id'); // 購買的訂單 (作為購買證明)
-            
-            $table->unsignedTinyInteger('rating'); // 星等 1-5
-            $table->text('comment')->nullable();   // 文字評論
-            
-            $table->timestamps();
-
-            // 外鍵約束
-            $table->foreign('user_id')->references('user_id')->on('users')->onDelete('cascade');
-            $table->foreign('book_id')->references('book_id')->on('books')->onDelete('cascade');
-            $table->foreign('order_id')->references('order_id')->on('orders')->onDelete('cascade');
-
-            // 防止重複評論：同一個人在同一筆訂單中，對同一本書只能評一次
-            $table->unique(['user_id', 'book_id', 'order_id']);
-        });
+        // 👇 [重點] 加這個判斷：如果資料庫還沒有 reviews 表，才執行建立
+        if (!Schema::hasTable('reviews')) {
+            Schema::create('reviews', function (Blueprint $table) {
+                $table->id('review_id'); // 主鍵
+                $table->foreignId('user_id')->constrained('users', 'user_id')->onDelete('cascade');
+                $table->foreignId('book_id')->constrained('books', 'book_id')->onDelete('cascade');
+                $table->foreignId('order_id')->constrained('orders', 'order_id')->onDelete('cascade');
+                
+                $table->integer('rating')->comment('1-5星');
+                $table->text('comment')->nullable();
+                $table->timestamp('review_time')->useCurrent();
+                
+                $table->timestamps(); // created_at, updated_at
+            });
+        }
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('reviews');

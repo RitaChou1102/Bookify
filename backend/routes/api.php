@@ -21,6 +21,7 @@ use App\Http\Controllers\ComplainUserController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ImageUploadController;
 /*
 |--------------------------------------------------------------------------
 | 1. 公開 API (Public) - 任何人皆可訪問
@@ -105,6 +106,7 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     Route::post('/coupons', [CouponController::class, 'store']);
     Route::put('/coupons/{id}',[CouponController::class, 'update']);
     // Image
+    Route::post('/upload-image', [ImageUploadController::class, 'upload']);
     Route::post('/books/{book_id}/images', [ImageController::class, 'store']);// 批次上傳書籍圖片
     Route::delete('/images/{image_id}', [ImageController::class, 'destroy']);// 刪除單一圖片
     Route::patch('/images/reorder', [ImageController::class, 'reorder']);// 更新圖片排序

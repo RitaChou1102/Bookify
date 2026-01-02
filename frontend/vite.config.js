@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -11,10 +11,11 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
+    host: '0.0.0.0', // 讓 Docker 外部也能存取
+    port: 5173,      // 前端 Port
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8000', // 指向後端 (Docker Port 8000)
         changeOrigin: true,
         secure: false,
       },
@@ -22,6 +23,7 @@ export default defineConfig({
       '/storage': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        secure: false,
       }
     }
   }
