@@ -18,11 +18,17 @@ return [
 
     // [重要] Cloudinary 套件主要讀取的是這個 'cloud' 陣列
     'cloud' => [
-        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
-        'api_key'    => env('CLOUDINARY_API_KEY'),
-        'api_secret' => env('CLOUDINARY_API_SECRET'),
-        'url'        => env('CLOUDINARY_URL'),
+        'cloud'  => env('CLOUDINARY_CLOUD_NAME', 'default_cloud'),
+        'key'    => env('CLOUDINARY_API_KEY', 'default_key'),
+        'secret' => env('CLOUDINARY_API_SECRET', 'default_secret'),
     ],
+//     'cloud' => [
+//         // 使用 env 的第二個參數作為測試時的預設值
+//        'cloud'  => env('CLOUDINARY_CLOUD_NAME', 'test_cloud'),
+//        'key'    => env('CLOUDINARY_API_KEY', 'test_key'),
+//        'secret' => env('CLOUDINARY_API_SECRET', 'test_secret'),
+// //     'url'        => env('CLOUDINARY_URL'),
+//     ],
     
     'url' => [
         'secure' => env('CLOUDINARY_SECURE', true),

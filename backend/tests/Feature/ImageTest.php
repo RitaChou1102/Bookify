@@ -27,6 +27,32 @@ class ImageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['cloudinary.cloud' => [
+            'cloud'  => 'test_cloud',
+            'key'    => 'test_key',
+            'secret' => 'test_secret',
+        ]]);
+
+        dump(config('cloudinary.cloud.cloud'));
+        dump(config('cloudinary.cloud'));
+        dump(env('CLOUDINARY_API_KEY'));
+        dump(config('cloudinary.cloud_url'));
+        dump(env('CLOUDINARY_URL'));
+        dump(config('cloudinary'));
+
+//         $mockCloudinary = Mockery::mock('CloudinaryLabs\CloudinaryLaravel\Cloudinary');
+//         $this->app->instance('cloudinary', $mockCloudinary);
+        // 強制注入配置，防止 ServiceProvider 崩潰
+            $fakeConfig = [
+                'cloud' => 'test_cloud',
+                'key'   => 'test_key',
+                'secret'=> 'test_secret',
+            ];
+
+            // 同時設定這三個位置，因為不同版本的套件讀取位置不同
+            config(['cloudinary-laravel' => $fakeConfig]);
+            config(['cloudinary-laravel.cloud' => $fakeConfig]); // 針對某些版本直接讀 cloud node
+            config(['cloudinary.cloud' => $fakeConfig]);
 
         // 1. 建立廠商資料
         $this->businessUser = User::factory()->create(['role' => 'business']);
@@ -62,18 +88,36 @@ class ImageTest extends TestCase
      */
     public function test_business_can_upload_image()
     {
-        // 1. 模擬 Cloudinary 的回傳物件
-        $mockResult = Mockery::mock();
-        $mockResult->shouldReceive('getSecurePath')
-                   ->andReturn('https://res.cloudinary.com/demo/image/upload/sample.jpg');
 
-        // 2. 告訴 Laravel 當呼叫 Cloudinary::upload 時，回傳上面的假物件
-        Cloudinary::shouldReceive('upload')
-            ->once()
-            ->andReturn($mockResult);
+        //dump("Fake Cloudinary Class: " . get_class($currentCloudinary));
+        // 注意：Cloudinary SDK 內部的屬性存取可能是這樣：
+        //dump($currentCloudinary->configuration()->cloud->cloudName);        // 1. 模擬 Cloudinary 的回傳物件
 
+//         $mockUploadedFile = Mockery::mock();
+//         $mockUploadedFile->shouldReceive('getSecurePath')
+//                             ->andReturn('https://res.cloudinary.com/demo/image/upload/sample.jpg');
+//
+//         $mockCloudinary = Mockery::mock('CloudinaryLabs\CloudinaryLaravel\Cloudinary');
+//         $mockCloudinary->shouldReceive('upload')
+//                            ->once()
+//                            ->withAnyArgs()
+//                            ->andReturn($mockUploadedFile);
+//         $this->app->instance('cloudinary', $mockCloudinary);
+
+// 1. 準備 Mock 結果
+    $mockResult = Mockery::mock();
+    $mockResult->shouldReceive('getSecurePath')
+               ->andReturn('https://res.cloudinary.com/demo/image/upload/sample.jpg');
+
+    // 2. 攔截 Facade
+    Cloudinary::shouldReceive('upload')
+        ->once()
+        ->withAnyArgs()
+        ->andReturn($mockResult);
         // 3. 準備假圖片檔案
-        $file = UploadedFile::fake()->image('cover.jpg');
+        $file = UploadedFile::fake()->create('cover.jpg', 100, 'image/jpeg');
+
+        $this->withoutExceptionHandling();
 
         // 4. 發送請求
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->businessToken])
