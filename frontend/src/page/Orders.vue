@@ -3,29 +3,35 @@
     <div class="orders-container">
       <h1 class="title">我的訂單</h1>
 
-      <el-table v-if="orders.length > 0" :data="orders" style="width: 100%">
-        <el-table-column prop="orderId" label="訂單編號" width="200" />
-        <el-table-column prop="date" label="下單日期" width="150" />
-        <el-table-column prop="total" label="總金額" width="120">
+      <div v-if="loading" class="loading">載入中...</div>
+
+      <el-table v-else-if="orders.length > 0" :data="orders" style="width: 100%">
+        <el-table-column prop="order_id" label="訂單編號" width="200">
+           <template #default="scope">#{{ scope.row.order_id }}</template>
+        </el-table-column>
+        
+        <el-table-column prop="order_time" label="下單日期" width="180" />
+        
+        <el-table-column prop="total_amount" label="總金額" width="120">
           <template #default="scope">
-            NT$ {{ scope.row.total }}
+            NT$ {{ Math.floor(scope.row.total_amount) }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="狀態" width="140">
+        
+        <el-table-column prop="order_status" label="狀態" width="140">
           <template #default="scope">
-            <el-tag
-              :type="statusType(scope.row.status)"
-            >
-              {{ scope.row.status }}
+            <el-tag :type="statusType(scope.row.order_status)">
+              {{ statusText(scope.row.order_status) }}
             </el-tag>
           </template>
         </el-table-column>
+        
         <el-table-column label="操作">
           <template #default="scope">
             <el-button
               type="primary"
               size="small"
-              @click="viewOrder(scope.row.orderId)"
+              @click="viewOrder(scope.row.order_id)"
             >
               查看詳情
             </el-button>
@@ -41,70 +47,59 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import { useRouter } from "vue-router"
+import { getOrders } from "@/api/order" // 引入 API
 
 const router = useRouter()
+const orders = ref([])
+const loading = ref(true)
 
-// 假資料（之後可換成 API）
-const orders = ref([
-  {
-    orderId: "ORDER-20240301-001",
-    date: "2024-03-01",
-    total: 980,
-    status: "Completed"
-  },
-  {
-    orderId: "ORDER-20240305-002",
-    date: "2024-03-05",
-    total: 300,
-    status: "Paid"
-  },
-  {
-    orderId: "ORDER-20240308-003",
-    date: "2024-03-08",
-    total: 450,
-    status: "Pending"
+onMounted(async () => {
+  try {
+    const data = await getOrders()
+    orders.value = data
+  } catch (err) {
+    console.error("載入訂單失敗", err)
+  } finally {
+    loading.value = false
   }
-])
+})
 
-function viewOrder(orderId) {
-  router.push({
-    name: 'order-detail',
-    params: { orderId }
-  })
+function viewOrder(id) {
+  // 注意：這裡使用 id 作為參數，路由請確保是 /orders/:id
+  router.push(`/order/${id}`)
 }
 
+// 狀態顏色對應
 function statusType(status) {
-  if (status === "Completed") return "success"
-  if (status === "Paid") return "warning"
-  if (status === "Pending") return "info"
-  return ""
+  const map = {
+    'Received': 'info',      // 已接收
+    'Processing': 'primary', // 處理中
+    'Shipped': 'warning',    // 已出貨
+    'Completed': 'success',  // 已完成
+    'Cancelled': 'danger'    // 已取消
+  }
+  return map[status] || ''
+}
+
+// 狀態中文對應
+function statusText(status) {
+  const map = {
+    'Received': '已接收',
+    'Processing': '處理中',
+    'Shipped': '已出貨',
+    'Completed': '已完成',
+    'Cancelled': '已取消'
+  }
+  return map[status] || status
 }
 </script>
 
 <style scoped>
-.orders-page {
-  padding: 40px 16px;
-}
-
-.orders-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  background: #fff;
-  padding: 24px;
-  border-radius: 8px;
-}
-
-.title {
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 24px;
-}
-
-.empty {
-  margin-top: 40px;
-  text-align: center;
-  color: #888;
-}
+.orders-page { padding: 40px 16px; }
+.orders-container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; min-height: 50vh;}
+.title { font-size: 22px; font-weight: 600; margin-bottom: 24px; }
+.empty { margin-top: 40px; text-align: center; color: #888; }
+.loading { text-align: center; padding: 20px; color: #666; }
 </style>

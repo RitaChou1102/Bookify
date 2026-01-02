@@ -47,3 +47,8 @@ export function removeCartItem(cartItemId) {
 export function clearCart() {
   return apiClient.delete('/cart/clear');
 }
+
+export function checkout(data) {
+  // data 格式預期: { payment_method: 'CreditCard', coupon_code: '...', ... }
+  return apiClient.post('/cart/checkout', data);
+}

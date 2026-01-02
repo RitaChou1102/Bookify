@@ -20,12 +20,14 @@ use App\Http\Controllers\ComplainAdminController;
 use App\Http\Controllers\ComplainUserController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 /*
 |--------------------------------------------------------------------------
 | 1. 公開 API (Public) - 任何人皆可訪問
 |--------------------------------------------------------------------------
 */
-
+// 書籍搜尋 API
+Route::get('/books/search', [\App\Http\Controllers\BookController::class, 'search']);
 // 書籍相關
 Route::get('/books', [BookController::class, 'index']);           // 瀏覽書籍
 Route::get('/books/{id}', [BookController::class, 'show']);       // 書籍詳情
@@ -64,6 +66,7 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::put('/user/password', [\App\Http\Controllers\UserController::class, 'changePassword']);
 
     // --- 購物車 ---
     Route::get('/cart', [CartController::class, 'show']);
@@ -105,6 +108,9 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     Route::post('/books/{book_id}/images', [ImageController::class, 'store']);// 批次上傳書籍圖片
     Route::delete('/images/{image_id}', [ImageController::class, 'destroy']);// 刪除單一圖片
     Route::patch('/images/reorder', [ImageController::class, 'reorder']);// 更新圖片排序
+    // [新增] 個人資料 API
+    Route::get('/user/profile', [UserController::class, 'show']);
+    Route::put('/user/profile', [UserController::class, 'update']);
 });
 
 

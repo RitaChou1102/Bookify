@@ -30,25 +30,31 @@
             </div>
           </template>
           <el-radio-group v-model="form.payment">
-            <el-radio value="CreditCard" size="large" border>信用卡付款</el-radio>
-            <el-radio value="COD" size="large" border>貨到付款</el-radio>
-            <el-radio value="Transfer" size="large" border>銀行轉帳</el-radio>
+            <el-radio value="Credit_card" size="large" border>信用卡付款</el-radio>
+            <el-radio value="Cash" size="large" border>貨到付款</el-radio>
+            <el-radio value="Bank_transfer" size="large" border>銀行轉帳</el-radio>
           </el-radio-group>
         </el-card>
       </div>
 
       <div class="summary-section">
-        <el-card class="summary-card">
+        <el-card class="summary-card" v-loading="loading">
           <h3>訂單摘要</h3>
-          <div class="order-items">
-            <div v-for="item in mockCartItems" :key="item.id" class="order-item">
-              <img :src="item.image" alt="book" class="item-img">
+          
+          <div v-if="cartItems.length > 0" class="order-items">
+            <div v-for="item in cartItems" :key="item.id" class="order-item">
+              <img :src="item.book.cover_image?.image_url || 'https://via.placeholder.com/60'" 
+                   class="item-img" alt="book">
+              
               <div class="item-info">
-                <div class="item-name">{{ item.name }}</div>
+                <div class="item-name">{{ item.book.name }}</div>
                 <div class="item-meta">x {{ item.quantity }}</div>
               </div>
-              <div class="item-price">NT$ {{ item.price * item.quantity }}</div>
+              <div class="item-price">NT$ {{ Math.floor(item.book.price * item.quantity) }}</div>
             </div>
+          </div>
+          <div v-else class="empty-cart-msg">
+            購物車是空的
           </div>
 
           <el-divider />
@@ -65,7 +71,7 @@
             <span>優惠券</span>
             <span>
               <template v-if="selectedCoupon">
-                - NT$ {{ selectedCoupon.discount }}
+                - NT$ {{ discountAmount }}
               </template>
               <template v-else>
                 尚未套用
@@ -77,6 +83,7 @@
             text
             type="primary"
             @click="showCouponDialog = true"
+            :disabled="cartItems.length === 0"
           >
             選擇優惠券
           </el-button>
@@ -85,10 +92,17 @@
 
           <div class="price-row total">
             <span>總金額</span>
-            <span class="total-price">NT$ {{ total }}</span>
+            <span class="total-price">NT$ {{ finalTotal }}</span>
           </div>
 
-          <el-button type="primary" class="w-full mt-4" size="large" @click="submitOrder">
+          <el-button 
+            type="primary" 
+            class="w-full mt-4" 
+            size="large" 
+            @click="submitOrder"
+            :loading="submitting"
+            :disabled="cartItems.length === 0"
+          >
             確認下單
           </el-button>
         </el-card>
@@ -97,18 +111,22 @@
 
     <CouponDialog
       :visible="showCouponDialog"
-      @close="showCouponDialog = false"
-      @select="selectedCoupon = $event"
+      :current-total="subtotal"  @close="showCouponDialog = false"
+      @select="handleCouponSelect"
     />
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import CouponDialog from '@/components/CouponDialog.vue'
+import { getCart, checkout } from '@/api/cart' // 引入 API
 
 const router = useRouter()
+const loading = ref(true)      // 載入購物車狀態
+const submitting = ref(false)  // 送出訂單狀態
 
 // 1. 表單資料
 const form = reactive({
@@ -118,46 +136,124 @@ const form = reactive({
   payment: 'CreditCard'
 })
 
-// 2. 優惠券相關
+// 2. 購物車資料
+const cartItems = ref([])
+const shippingFee = 60 // 固定運費
+
+// 3. 優惠券
 const showCouponDialog = ref(false)
 const selectedCoupon = ref(null)
 
-const discount = computed(() => {
-  return selectedCoupon.value ? selectedCoupon.value.discount : 0
-})
-
-// 3. 模擬購物車資料 (因為購物車功能還沒做，先用假資料撐場面)
-const mockCartItems = ref([
-  { id: 1, name: '被討厭的勇氣', price: 300, quantity: 1, image: 'https://via.placeholder.com/60' },
-  { id: 2, name: '原子習慣', price: 330, quantity: 2, image: 'https://via.placeholder.com/60' }
-])
-
-// 4. 計算金額
+// 4. 計算金額邏輯
 const subtotal = computed(() => {
-  return mockCartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  if (!cartItems.value) return 0
+  return cartItems.value.reduce((sum, item) => {
+    return sum + (Number(item.book.price) * item.quantity)
+  }, 0)
 })
-const shippingFee = 60
-const total = computed(() =>
-  subtotal.value + shippingFee - discount.value
-)
 
-// 5. 送出訂單
-const submitOrder = () => {
+// 計算折扣金額
+const discountAmount = computed(() => {
+  if (!selectedCoupon.value) return 0
+  const coupon = selectedCoupon.value
+  
+  // 檢查門檻
+  if (subtotal.value < coupon.limit_price) {
+    return 0
+  }
+
+  // 計算折扣 (0: 百分比, 1: 定額)
+  if (coupon.discount_type === 'percent_off' || coupon.discount_type == 0) {
+    // 百分比折扣 (例如 10 代表 10% off)
+    return Math.floor(subtotal.value * (coupon.discount_value / 100))
+  } else {
+    // 定額折扣 (fixed)
+    return Number(coupon.discount_value)
+  }
+})
+
+const finalTotal = computed(() => {
+  const total = subtotal.value + shippingFee - discountAmount.value
+  return total > 0 ? total : 0
+})
+
+// 5. 初始化：撈取購物車
+onMounted(async () => {
+  try {
+    const res = await getCart()
+    // 假設後端回傳結構為 res.data 或 res.data.items
+    // 根據 Laravel Resource 常見格式，通常在 res.data.items
+    cartItems.value = res.data.items || [] 
+    
+    // 如果購物車是空的，提示使用者
+    if (cartItems.value.length === 0) {
+      ElMessage.warning('購物車是空的，請先選購商品')
+      router.push('/')
+    }
+  } catch (err) {
+    console.error('載入購物車失敗', err)
+    ElMessage.error('無法載入購物車資訊')
+  } finally {
+    loading.value = false
+  }
+})
+
+// 處理優惠券選擇
+function handleCouponSelect(coupon) {
+  // 簡單前端驗證門檻
+  if (subtotal.value < coupon.limit_price) {
+    ElMessage.warning(`未滿 ${coupon.limit_price} 元無法使用此優惠券`)
+    return
+  }
+  selectedCoupon.value = coupon
+  showCouponDialog.value = false
+  ElMessage.success('已套用優惠券')
+}
+
+// 6. 送出訂單
+const submitOrder = async () => {
+  // 基本驗證
   if (!form.name || !form.phone || !form.address) {
-    alert('請填寫完整收件資訊')
+    ElMessage.warning('請填寫完整的收件人資訊')
     return
   }
 
-  // 模擬訂單編號（Demo 用）
-  const mockOrderId = 'ORD-' + Date.now()
+  submitting.value = true
 
-  router.push({
-    path: '/order/success',
-    query: {
-      orderId: mockOrderId,
-      total: total.value
+  try {
+    // 準備 API 需要的資料
+    const payload = {
+      payment_method: form.payment,
+      coupon_code: selectedCoupon.value ? selectedCoupon.value.code : null,
+      // 雖然目前的 OrderController 可能沒存地址，但建議還是送過去，以備未來擴充
+      recipient_name: form.name,
+      recipient_phone: form.phone,
+      recipient_address: form.address,
     }
-  })
+
+    const res = await checkout(payload)
+    
+    ElMessage.success('訂單建立成功！')
+    
+    // 跳轉到成功頁面，帶上訂單編號
+    router.push({
+      path: '/order/success',
+      query: {
+        orderId: res.data.order_id,
+        total: finalTotal.value
+      }
+    })
+
+  } catch (err) {
+    console.error('結帳失敗', err)
+    if (err.response?.status === 400) {
+      ElMessage.error(err.response.data.message || '結帳失敗')
+    } else {
+      ElMessage.error('系統發生錯誤，請稍後再試')
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -181,32 +277,52 @@ const submitOrder = () => {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
 }
 .item-img {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 80px;
   object-fit: cover;
   border-radius: 4px;
-  margin-right: 10px;
+  margin-right: 15px;
+  background-color: #f0f0f0;
 }
 .item-info { flex: 1; }
-.item-name { font-size: 14px; font-weight: bold; }
+.item-name { 
+  font-size: 14px; 
+  font-weight: bold; 
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .item-meta { font-size: 12px; color: #666; }
-.item-price { font-weight: bold; }
+.item-price { font-weight: bold; color: #333; }
 
 .price-row {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
   color: #555;
+  font-size: 14px;
 }
 .price-row.total {
   font-size: 18px;
   color: #000;
   font-weight: bold;
-  margin-top: 10px;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid #eee;
 }
-.total-price { color: #f56c6c; }
+.total-price { color: #e67e22; }
+
+.empty-cart-msg {
+  text-align: center;
+  color: #999;
+  padding: 20px 0;
+}
 
 @media (max-width: 768px) {
   .checkout-layout { grid-template-columns: 1fr; }

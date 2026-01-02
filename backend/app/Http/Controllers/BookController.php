@@ -100,4 +100,29 @@ class BookController extends Controller
         }
         return response()->json(['message' => '無權限刪除此書籍'], 403);
     }
+    // 新增 search 方法
+    public function search(Request $request)
+    {
+        $keyword = $request->input('keyword');
+        
+        // 預設只搜尋已上架的書，並預載作者與封面圖
+        $query = Book::where('listing', true)
+                     ->with(['author', 'coverImage']);
+
+        if ($keyword) {
+            $query->where(function($q) use ($keyword) {
+                // 1. 搜尋書名
+                $q->where('name', 'like', "%{$keyword}%")
+                  // 2. 或搜尋描述
+                  ->orWhere('description', 'like', "%{$keyword}%")
+                  // 3. 或搜尋作者名字 (關聯查詢)
+                  ->orWhereHas('author', function($subQ) use ($keyword) {
+                      $subQ->where('name', 'like', "%{$keyword}%");
+                  });
+            });
+        }
+
+        // 分頁回傳，一頁 12 筆
+        return response()->json($query->paginate(12));
+    }
 }

@@ -11,7 +11,7 @@ import Cart from '../page/cart.vue'
 import VendorProducts from '../page/VendorProducts.vue'
 import UserProfile from '../page/UserProfile.vue'
 import VendorOrders from '../page/VendorOrders.vue'
-import Orders from '../page/Orders.vue'
+// import Orders from '../page/Orders.vue' // 可以註解掉或保留，下面已經用動態引入了
 import OrderDetail from '../page/OrderDetail.vue'
 import AdminDashboard from '../page/AdminDashboard.vue'
 import AdminUsers from '../page/AdminUsers.vue'
@@ -53,9 +53,9 @@ const router = createRouter({
       component: Cart
     },
     {
-      path: '/upload-test', // <--- 您要訪問的 URL 路徑
+      path: '/upload-test',
       name: 'UploadTest',
-      component: CloudinaryUploadTest // <--- 指向您的新元件
+      component: CloudinaryUploadTest
     },
     {
       path: '/checkout',
@@ -85,13 +85,25 @@ const router = createRouter({
     {
       path: '/orders',
       name: 'orders',
-      component: Orders
+      component: () => import('@/page/Orders.vue')
     },
+    
+    // [🔥保留這一個正確的] 對應你的按鈕連結 /order/2
     {
+        path: '/order/:id',     
+        name: 'order-detail',   
+        component: OrderDetail,
+        meta: { requiresAuth: true }
+    },
+
+    // [❌刪除這一個] 這是重複的，而且路徑是複數 (orders)，導致單數路徑失效
+    /* {
       path: '/orders/:orderId',
       name: 'order-detail',
       component: OrderDetail
     },
+    */
+
     { 
       path: '/vendor/orders', 
       name: 'vendor-orders', 

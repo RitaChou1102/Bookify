@@ -30,6 +30,7 @@ class Review extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'user_id',
         'book_id',
         'order_id',
         'rating',
@@ -71,6 +72,11 @@ class Review extends Model
     public function order()
     {
         return $this->belongsTo(Order::class, 'order_id', 'order_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
 

@@ -12,38 +12,23 @@ class Coupon extends Model
 {
     use HasFactory;
 
-    /**
-     * 指定主鍵名稱
-     */
     protected $primaryKey = 'coupon_id';
-
-    /**
-     * 指定資料表名稱
-     */
-    protected $table = 'coupons';
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    
+    public $timestamps = false;
+    // 確保欄位可以被寫入
     protected $fillable = [
-        'name',
-        'business_id',
         'code',
-        'description',
-        'start_date',
-        'end_date',
         'discount_type',
         'discount_value',
         'limit_price',
-        'usage_limit',
+        'start_time',
+        'end_time',
+        'status',
         'used_count',
-        'coupon_type',
-        'is_deleted',
+        'business_id'
     ];
 
-    /**
+/**
      * 不使用 timestamps（根據 schema）
      */
     public $timestamps = false;
@@ -90,13 +75,28 @@ class Coupon extends Model
      */
     public function isAvailable(): bool
     {
+        // 1. 檢查是否被刪除 (你的資料庫是用 is_deleted，不是 status)
+        if ($this->is_deleted) {
+            return false;
+        }
+
         $now = now();
-        if ($this->is_deleted) return false;
 
-        $isTimeValid = ($this->start_date <= $now) && (is_null($this->end_date) || $this->end_date >= $now);
-        $hasQuota = is_null($this->usage_limit) || $this->used_count < $this->usage_limit;
+        // 2. 檢查開始時間
+        if ($this->start_date && $now->lt($this->start_date)) {
+            return false;
+        }
 
-        return $isTimeValid && $hasQuota;
+        // 3. 檢查結束時間
+        if ($this->end_date && $now->gt($this->end_date)) {
+            return false;
+        }
+
+        // 4. 檢查使用次數上限 (如果有設定 usage_limit)
+        if (!is_null($this->usage_limit) && $this->used_count >= $this->usage_limit) {
+            return false;
+        }
+
+        return true;
     }
 }
-

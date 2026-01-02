@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    // 新增評價
+    // 新增或更新評價
     public function store(Request $request)
     {
         $request->validate([
@@ -20,43 +20,52 @@ class ReviewController extends Controller
 
         $user = $request->user();
 
-        // 嚴格檢查 $user 和 $user->member 是否存在
-        // 防止如果是 Admin 或是資料異常的 User 呼叫此 API 時報 500 錯誤
+        // 1. 嚴格檢查會員身分
         if (!$user || !$user->member) {
              return response()->json(['message' => '只有會員可以評價'], 403);
         }
 
-        // 檢查是否真的有買過這本書且訂單已完成
+        // 2. 檢查是否真的有買過這本書且訂單已完成
+        // 注意：這裡直接用字串 'Completed' 是沒問題的，只要你資料庫存的是這個字串
         $hasBought = Order::where('order_id', $request->order_id)
                           ->where('member_id', $user->member->member_id)
-                          ->where('order_status', 'Completed')          //Order 模型 (Order.php) 裡面並沒有定義 STATUS_COMPLETED 這個常數
+                          ->where('order_status', 'Completed') 
                           ->whereHas('details', function ($query) use ($request) {
                               $query->where('book_id', $request->book_id);
                           })
                           ->exists();
 
         if (!$hasBought) {
-            // 開發測試階段可暫時註解此檢查，方便測試
+            // 如果你在測試階段想跳過這個檢查，可以把下面這行暫時註解掉
             return response()->json(['message' => '您尚未購買此書或訂單未完成'], 403);
         }
 
+        // 3. 建立或更新評論
         $review = Review::updateOrCreate(
-                [
-                    'book_id'  => $request->book_id,
-                    'order_id' => $request->order_id,
-                ],
-                [
-                    'rating'      => $request->rating,
-                    'comment'     => $request->comment,
-                    'review_time' => now(), // 更新時也刷新評論時間
-                ]
-            );
+            [
+                // 搜尋條件：同一個人、同一張單、同一本書
+                'user_id'  => $user->user_id, // [重要修正] 必須加上 user_id
+                'book_id'  => $request->book_id,
+                'order_id' => $request->order_id,
+            ],
+            [
+                // 更新內容
+                'rating'  => $request->rating,
+                'comment' => $request->comment,
+                // [重要修正] 移除 'review_time'，Laravel 會自動更新 created_at 和 updated_at
+            ]
+        );
+
         return response()->json(['message' => '評價已送出', 'data' => $review]);
     }
 
     // 取得某本書的評價
     public function getBookReviews($bookId)
     {
-        return Review::where('book_id', $bookId)->orderByDesc('review_time')->get();
+        // [重要修正] 資料庫沒有 review_time，改用 created_at 排序
+        return Review::where('book_id', $bookId)
+                     ->with('user') // 順便把評論者的名字頭像抓出來
+                     ->orderByDesc('created_at') 
+                     ->paginate(10); // 建議用分頁，避免一次傳太多
     }
 }
