@@ -9,47 +9,31 @@ class Book extends Model
 {
     use HasFactory;
 
-    /**
-     * 指定主鍵名稱
-     */
     protected $primaryKey = 'book_id';
-
-    /**
-     * 指定資料表名稱
-     */
     protected $table = 'books';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    // ✅ [修正1] 開啟時間戳記，這樣首頁才能用「最新上架」排序
+    public $timestamps = true;
+
     protected $fillable = [
-        'name',           // 書名
-        'author_id',      // 作者 ID
-        'isbn',           // ISBN 碼
-        'publish_date',   // 出版日期
-        'edition',        // 版本
-        'publisher',      // 出版商
-        'description',    // 描述
-        'price',          // 價格
-        'condition',      // 書況 (new/used)
-        'category_id',    // 分類 ID
-        'business_id',    // 商家 ID
-        'stock',          // 庫存
-        'listing',        // 是否上架
+        'name',
+        'author_id',
+        'isbn',
+        'publish_date',
+        'edition',
+        'publisher',
+        'description',
+        'price',
+        'condition',
+        'category_id',
+        'business_id',
+        'stock',
+        'listing',
+        'user_id', // ✅ [修正2] 加入 user_id，允許寫入賣家 ID
+        'created_at', // 保險起見也可以加上去
+        'updated_at',
     ];
 
-    /**
-     * 不使用 timestamps（根據 schema）
-     */
-    public $timestamps = false;
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -59,65 +43,47 @@ class Book extends Model
         ];
     }
 
-    /**
-     * 取得書籍的作者
-     */
     public function author()
     {
         return $this->belongsTo(Author::class, 'author_id', 'author_id');
     }
 
-    /**
-     * 取得書籍的類別
-     */
     public function category()
     {
         return $this->belongsTo(BookCategory::class, 'category_id', 'category_id');
     }
 
-    /**
-     * 取得書籍的廠商
-     */
     public function business()
     {
         return $this->belongsTo(Business::class, 'business_id', 'business_id');
     }
 
-    /**
-     * 取得書籍的所有圖片
-     */
     public function images()
     {
-        return $this->hasMany(Image::class, 'book_id', 'book_id')->orderBy('image_index');
+        // 這裡如果你確定資料表有 image_index 就保留，沒有的話建議拿掉 orderBy
+        return $this->hasMany(Image::class, 'book_id', 'book_id');
     }
 
     /**
-     * 取得書籍的封面圖片（image_index=0 的圖片）
+     * 取得書籍的封面圖片
      */
     public function coverImage()
     {
-        return $this->hasOne(Image::class, 'book_id', 'book_id')->where('image_index', 0);
+        // ✅ [修正3] 配合 Controller 的寫法，改成找 'is_cover' 為 true 的圖片
+        // 原本的 image_index 可能不存在於資料庫，導致 500 錯誤
+        return $this->hasOne(Image::class, 'book_id', 'book_id')->where('is_cover', true);
     }
 
-    /**
-     * 取得書籍的所有評價
-     */
     public function reviews()
     {
         return $this->hasMany(Review::class, 'book_id', 'book_id');
     }
 
-    /**
-     * 取得書籍的訂單明細
-     */
     public function orderDetails()
     {
         return $this->hasMany(OrderDetail::class, 'book_id', 'book_id');
     }
 
-    /**
-     * 取得書籍的購物車項目
-     */
     public function cartItems()
     {
         return $this->hasMany(CartItem::class, 'book_id', 'book_id');

@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-const apiClient = axios.create({
-  baseURL: '/api', // 確保這裡有逗號
+// 建立一個直連後端的 axios 實例 (備用)
+const directClient = axios.create({
+  baseURL: 'http://localhost:8000/api', // ✅ 強制直連後端 Port 8000
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -9,30 +10,32 @@ const apiClient = axios.create({
 });
 
 export function searchBooks(keyword) {
-  return apiClient.get('/books/search', {
+  return directClient.get('/books/search', {
     params: { keyword: keyword }
   }).then(response => response.data);
 }
 
-// 取得熱門書籍
+// ✅ [關鍵修改] 取得熱門書籍 (直連後端，解決首頁 500 錯誤)
 export function getHotBooks() {
-  return apiClient.get('/books')
+  return directClient.get('/books')
     .then(response => response.data);
 }
 
-export function createBook(data) {
-  return apiClient.post('/books', data)
-    .then(res => res.data);
+// ✅ [關鍵修改] 新增書籍 (帶 Token 直連後端)
+export const createBook = async (data) => {
+  const token = localStorage.getItem('token')
+  return axios.post('http://localhost:8000/api/books', data, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  })
 }
 
-// --- [新增] 取得單一書籍詳情 ---
+// ✅ [關鍵修改] 取得單一書籍詳情 (直連後端)
 export function getBook(id) {
-  return apiClient.get(`/books/${id}`)
-    .then(response => {
-        // 後端 BookController 回傳的是 response()->json($book)
-        // Axios 會把它包在 response.data 裡面
-        return response.data; 
-    })
+  return directClient.get(`/books/${id}`)
+    .then(response => response.data)
     .catch(error => {
       console.error(`Error fetching book ${id}:`, error);
       throw error;

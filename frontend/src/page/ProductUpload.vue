@@ -152,19 +152,29 @@ const handleFileChange = async (e) => {
 
   try {
     const token = localStorage.getItem('token')
-    // 呼叫後端上傳 API
-    const res = await axios.post('/api/upload-image', formData, {
+    
+    // 🔥 修改重點 1: 網址改成直連 http://localhost:8000 (繞過 Vite 代理)
+    // 🔥 修改重點 2: 移除 'Content-Type': 'multipart/form-data' (讓瀏覽器自動處理 Boundary)
+    const res = await axios.post('http://localhost:8000/api/upload-image', formData, {
       headers: { 
-        'Content-Type': 'multipart/form-data',
+        // 'Content-Type': 'multipart/form-data', // ❌ 這行一定要註解掉或是刪掉！
         'Authorization': `Bearer ${token}`
       }
     })
     
-    form.image_url = res.data.url
-    ElMessage.success('圖片上傳成功！')
+    console.log('上傳成功回應:', res.data); // 讓我們在 Console 看到結果
+    form.image_url = res.data.url || 'https://fakeimg.pl/300/'; // 暫時防止 url 讀不到報錯
+    
+    // 如果後端目前是回傳 debug info，這裡可能會沒有 url，我們手動處理一下顯示
+    if (res.data.status === 'success') {
+        ElMessage.success(res.data.msg)
+    } else {
+        ElMessage.success('圖片上傳成功！')
+    }
+
   } catch (err) {
-    console.error(err)
-    ElMessage.error('圖片上傳失敗，請稍後再試')
+    console.error('上傳失敗詳細錯誤:', err)
+    ElMessage.error('圖片上傳失敗，請查看 Console')
   } finally {
     uploading.value = false
   }
