@@ -49,12 +49,17 @@ class Complain extends Model
         ];
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     /**
      * 取得投訴的訂單
      */
     public function order()
     {
-        return $this->belongsTo(Order::class, 'order_id', 'order_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     /**

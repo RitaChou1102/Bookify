@@ -14,7 +14,6 @@ class Coupon extends Model
 
     protected $primaryKey = 'coupon_id';
     
-    public $timestamps = false;
     // 確保欄位可以被寫入
     protected $fillable = [
         'code',

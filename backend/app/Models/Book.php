@@ -13,7 +13,8 @@ class Book extends Model
     protected $table = 'books';
 
     // ✅ [修正1] 開啟時間戳記，這樣首頁才能用「最新上架」排序
-    public $timestamps = true;
+    // public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'name',
