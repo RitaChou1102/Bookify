@@ -16,7 +16,10 @@
             v-for="item in cartItems"
             :key="item.cart_item_id"
             >
-            <img :src="item.book?.cover_image?.image_url || '/placeholder.jpg'" class="item-image" />
+            <img 
+              :src="item.book?.cover_image?.image_url || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'" 
+              class="product-img" 
+            />
             <div class="item-info">
                 <div class="item-name">{{ item.book?.name }}</div>
                 <div class="item-author">單價: NT$ {{ item.price }}</div>
@@ -87,17 +90,14 @@ async function loadCart() {
   loading.value = true
   try {
     const res = await getCart()
-    // 後端返回 res.data = { cart_id, items: [...], summary: {...} }
-    cartItems.value = res.data?.items || []
-    console.log('購物車資料:', cartItems.value)
+    // 🔍 列印整個回應，看看資料到底在哪裡
+    console.log('API 完整回應:', res) 
+    
+    // 如果你的 axios 攔截器已經處理過一次 .data，這裡可能直接是 res.items
+    cartItems.value = res.data?.items || res.items || []
+    
   } catch (err) {
-    console.error('載入購物車失敗:', err)
-    if (err.response?.status === 401) {
-      ElMessage.warning('請先登入')
-      router.push('/login')
-    } else {
-      ElMessage.error('載入購物車失敗')
-    }
+    // ... 錯誤處理
   } finally {
     loading.value = false
   }
@@ -108,11 +108,18 @@ async function updateQuantity(item, newQuantity) {
   if (newQuantity < 1) return
   
   try {
-    await updateCartItem(item.cart_item_id, newQuantity)
-    item.quantity = newQuantity
+    const res = await updateCartItem(item.cart_item_id, newQuantity)
+    // ✅ 建議直接用後端回傳的最新資料更新，因為後端會幫你算好最新的 subtotal
+    if (res.data?.cart_item) {
+      item.quantity = res.data.cart_item.quantity
+      item.subtotal = res.data.cart_item.subtotal
+    } else {
+      // 備案：手動計算
+      item.quantity = newQuantity
+      item.subtotal = (parseFloat(item.price) * newQuantity).toFixed(2)
+    }
     ElMessage.success('已更新數量')
   } catch (err) {
-    console.error('更新數量失敗:', err)
     ElMessage.error('更新數量失敗')
   }
 }

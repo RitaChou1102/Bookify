@@ -40,62 +40,55 @@ class BookController extends Controller
         return response()->json($book);
     }
 
-    // [🔥重點修改] 賣家上架書籍 (C2C 版本)
     public function store(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        // 1. 驗證欄位
-        // 我們移除了 author_id 的檢查，改為接收 author (名字字串)
-        // 移除了 business 的檢查，因為現在是 C2C，人人都能賣
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'author' => 'required|string|max:255', // 接收作者名字
-            'price' => 'required|integer|min:0',
-            'stock' => 'required|integer|min:1',
-            'description' => 'nullable|string',
-            'image_url' => 'required|url', // 接收 Cloudinary 圖片網址
-            
-            // 如果你的資料庫 category_id 是必填 (NOT NULL)，請解開下面這行，並確保前端有傳
-            // 'category_id' => 'required|exists:book_categories,category_id',
+    // 🔒 1. 權限檢查：確認使用者是否有「廠商 (Business)」身分
+    // 假設 User 模型有 business() 關聯
+    if (!$user->business) {
+        return response()->json(['message' => '您尚未註冊成為賣家，無法上架商品'], 403);
+    }
+
+    // 2. 驗證欄位
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'author' => 'required|string|max:255',
+        'price' => 'required|integer|min:0',
+        'stock' => 'required|integer|min:1',
+        'description' => 'nullable|string',
+        'image_url' => 'required|url',
+    ]);
+
+    return \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $user) {
+        // ... (中間的 Author 處理保持不變) ...
+        $author = \App\Models\Author::firstOrCreate(['name' => $validated['author']]);
+
+        // 3. 建立書籍
+        $book = $user->books()->create([
+            'name' => $validated['name'],
+            'author_id' => $author->author_id,
+            'price' => $validated['price'],
+            'stock' => $validated['stock'],
+            'description' => $validated['description'],
+            'listing' => true,
+            'publish_date' => now(),
+            'isbn' => 'N/A',
+            'publisher' => $user->business->store_name, // 🟢 改用商店名稱
+            'condition' => 'new', // 廠商賣的通常是新品? 或是讓前端傳
+            'business_id' => $user->business->business_id, // 🟢 綁定廠商 ID
         ]);
 
-        return DB::transaction(function () use ($validated, $user) {
-            // 2. 處理作者 (如果作者不存在就自動建立)
-            // firstOrCreate 會用 name 去找，找不到就新增
-            $author = Author::firstOrCreate(
-                ['name' => $validated['author']]
-            );
+        // 4. 圖片處理 (保持不變)
+        \App\Models\Image::create([
+            'book_id' => $book->book_id,
+            'image_url' => $validated['image_url'],
+            'is_cover' => true
+        ]);
 
-            // 3. 建立書籍
-            // 注意：這裡假設 User 模型有 books() 關聯
-            // 如果報錯，請檢查 User.php 是否有 public function books() { return $this->hasMany(Book::class, 'user_id'); }
-            $book = $user->books()->create([
-                'name' => $validated['name'],
-                'author_id' => $author->author_id, // 關聯剛剛取得的作者 ID
-                'price' => $validated['price'],
-                'stock' => $validated['stock'],
-                'description' => $validated['description'],
-                'listing' => true, // 預設直接上架
-                'publish_date' => now(), // 簡單起見，預設今天 (或是讓前端傳)
-                'isbn' => 'N/A', // C2C 二手書不一定有 ISBN，給預設值
-                'publisher' => '個人賣家', // 給預設值
-                'condition' => 'used', // 預設二手
-                'edition' => 1,
-                // 如果有 category_id 記得加進來
-                // 'category_id' => $validated['category_id'] ?? 1, // 給個預設分類 ID 1 以防報錯
-            ]);
-
-            // 4. 儲存圖片到 images 資料表
-            Image::create([
-                'book_id' => $book->book_id,
-                'image_url' => $validated['image_url'],
-                'is_cover' => true // 標記為封面
-            ]);
-
-            return response()->json(['message' => '書籍上架成功', 'book' => $book], 201);
-        });
-    }
+        return response()->json(['message' => '書籍上架成功', 'book' => $book], 201);
+    });
+}
 
     // 修改書籍
     public function update(Request $request, $id)
@@ -115,19 +108,51 @@ class BookController extends Controller
     // 刪除書籍
     public function destroy(Request $request, $id)
     {
-        $book = Book::findOrFail($id);
         $user = $request->user();
-        
-        $isAdmin = $user->tokenCan('admin:all');
-        
-        // [修正] 檢查擁有權 (C2C 邏輯)
-        $isOwner = ($user->user_id === $book->user_id);
-        
-        if ($isAdmin || $isOwner) {
-            $book->delete();
-            return response()->json(['message' => '書籍已刪除']);
+        $book = Book::find($id);
+
+        if (!$book) {
+            return response()->json(['message' => '找不到該書籍'], 404);
         }
-        return response()->json(['message' => '無權限刪除此書籍'], 403);
+
+        // 權限檢查
+        if ((int)$book->user_id !== (int)$user->user_id && !$user->tokenCan('admin:all')) {
+            return response()->json(['message' => '無權限刪除此書籍'], 403);
+        }
+
+        try {
+            // 1. [關鍵] 檢查這本書是否已經有訂單？
+            // 必須先在 Book Model 裡加上 orderDetails() 關聯
+            if ($book->orderDetails()->exists()) {
+                // A計畫：有人買過 -> 不能刪，改為「下架」
+                $book->update(['listing' => false]);
+                return response()->json([
+                    'message' => '此書籍已有訂單紀錄，系統已自動將其「下架」以保留帳務資料。'
+                ]);
+            }
+
+            // B計畫：沒人買過 -> 安全刪除
+            DB::transaction(function () use ($book) {
+                // 先刪圖片
+                $book->images()->delete();
+                
+                // 先刪購物車 (購物車不重要，可以刪)
+                if (method_exists($book, 'cartItems')) {
+                    $book->cartItems()->delete();
+                }
+
+                // 最後刪除本體
+                $book->delete();
+            });
+
+            return response()->json(['message' => '書籍已完全刪除']);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => '操作失敗', 
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // 搜尋書籍
@@ -149,5 +174,18 @@ class BookController extends Controller
         }
 
         return response()->json($query->paginate(12));
+    }
+    public function myBooks(Request $request)
+    {
+        // 1. 抓出目前登入的使用者
+        $user = $request->user();
+
+        // 2. 找出這個人所有的書，並依照時間排序
+        $books = $user->books()
+                      ->with(['coverImage']) // 記得要把圖片也抓出來
+                      ->orderByDesc('created_at')
+                      ->get();
+
+        return response()->json($books);
     }
 }

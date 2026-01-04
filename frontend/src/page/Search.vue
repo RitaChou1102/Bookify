@@ -18,7 +18,9 @@
       >
         <div class="image-wrapper">
           <img 
-            :src="book.cover_image?.image_url || 'https://via.placeholder.com/150x200?text=No+Image'" 
+            :src="book.cover_image?.image_url || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'" 
+            class="book-img"
+            @error="(e) => e.target.src = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'"
             :alt="book.name"
           />
         </div>
@@ -34,16 +36,15 @@
       <el-empty description="找不到相關書籍，換個關鍵字試試？" />
       <el-button type="primary" @click="$router.push('/')">回首頁逛逛</el-button>
     </div>
-
-    <div class="pagination" v-if="total > 0">
-       </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { searchBooks } from '@/api/book'
+// 假設您的 API 封裝在這裡，如果路徑不同請自行調整
+import { searchBooks } from '@/api/book' 
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,22 +57,22 @@ const loading = ref(false)
 // 執行搜尋
 const doSearch = async () => {
   loading.value = true
-  keyword.value = route.query.keyword || '' // 從網址參數拿關鍵字
+  // 注意：這裡抓取的是網址上的 ?keyword=... 
+  // 如果你的網址是 ?q=... 請改成 route.query.q
+  keyword.value = route.query.keyword || route.query.q || '' 
   
   try {
     const res = await searchBooks(keyword.value)
-    // Laravel paginate 回傳結構通常是: { data: [...], total: 10, ... }
-    // 如果你的 API 回傳結構不同，請這裡微調
-    if (res.data) {
-        books.value = res.data
-        total.value = res.total || res.data.length
-    } else {
-        // 如果沒分頁直接回傳陣列
-        books.value = res
-        total.value = res.length
-    }
+    
+    // 處理 Laravel 分頁回傳結構 (res.data.data 或 res.data)
+    const resultList = res.data?.data || res.data || res;
+    
+    books.value = Array.isArray(resultList) ? resultList : [];
+    total.value = res.total || books.value.length;
+
   } catch (err) {
     console.error(err)
+    ElMessage.error('搜尋發生錯誤')
   } finally {
     loading.value = false
   }
@@ -82,8 +83,8 @@ onMounted(() => {
   doSearch()
 })
 
-// 2. 監聽網址變化 (例如從搜尋 A 變搜尋 B)
-watch(() => route.query.keyword, () => {
+// 2. 監聽網址變化 (相容 keyword 和 q 參數)
+watch(() => [route.query.keyword, route.query.q], () => {
   doSearch()
 })
 
@@ -97,9 +98,15 @@ function goToDetail(id) {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 20px;
+  min-height: 60vh;
 }
 .header {
   margin-bottom: 30px;
+  text-align: center;
+}
+.count-text {
+    color: #666;
+    margin-top: 5px;
 }
 .book-grid {
   display: grid;
@@ -113,6 +120,8 @@ function goToDetail(id) {
   overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 .book-card:hover {
   transform: translateY(-5px);
@@ -127,21 +136,32 @@ function goToDetail(id) {
   justify-content: center;
   overflow: hidden;
 }
-.image-wrapper img {
+/* 🟢 修正：圖片填滿樣式 */
+.book-img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 讓圖片填滿 */
+  object-fit: cover; 
+  transition: transform 0.3s;
 }
+.book-card:hover .book-img {
+    transform: scale(1.05);
+}
+
 .book-info {
   padding: 15px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 .book-title {
   font-size: 16px;
   font-weight: bold;
   margin-bottom: 5px;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .book-author {
   font-size: 14px;

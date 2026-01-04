@@ -17,6 +17,8 @@ import AdminDashboard from '../page/AdminDashboard.vue'
 import AdminUsers from '../page/AdminUsers.vue'
 import AdminComplaints from '../page/AdminComplaints.vue'
 import Search from '../page/Search.vue'
+import MyBooks from '../components/MyBooks.vue'
+import EditBook from '../components/EditBook.vue'
 
 
 const router = createRouter({
@@ -79,9 +81,10 @@ const router = createRouter({
       component: VendorProducts 
     },
     { 
-      path: '/profile', 
+      path: '/user/profile',  // 修正這裡，配合你的 Navbar 連結
       name: 'user-profile', 
-      component: UserProfile 
+      component: UserProfile,
+      meta: { requiresAuth: true } // 建議加上這個，確保沒登入不能看
     },
     {
       path: '/orders',
@@ -124,6 +127,16 @@ const router = createRouter({
       path: '/admin/complaints',
       name: 'admin-complaints',
       component: AdminComplaints
+    },
+    {
+      path: '/my-books',
+      name: 'my-books',
+      component: MyBooks
+    },
+    {
+      path: '/book/edit/:id', // :id 代表這是變數
+      name: 'edit-book',
+      component: EditBook
     }
   ]
 })

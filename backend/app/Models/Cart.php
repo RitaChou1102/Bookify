@@ -9,60 +9,31 @@ class Cart extends Model
 {
     use HasFactory;
 
-    /**
-     * 指定主鍵名稱
-     */
     protected $primaryKey = 'cart_id';
-
-    /**
-     * 指定資料表名稱
-     */
     protected $table = 'carts';
-
-    /**
-     * 不使用 timestamps（根據 schema）
-     */
     public $timestamps = false;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'member_id',
+        'member_id', // 在我們的 C2C 環境中，這就是買家的 user_id
     ];
 
-    /**
-     * 取得購物車的會員（注意：根據 schema，member_id 外鍵指向 users 表）
-     */
     public function user()
     {
         return $this->belongsTo(User::class, 'member_id', 'user_id');
     }
 
-    /**
-     * 取得購物車的所有商品項目
-     */
     public function items()
     {
         return $this->hasMany(CartItem::class, 'cart_id', 'cart_id');
     }
 
     /**
-     * 取得購物車的訂單（一個購物車只會產生一個訂單）
+     * ✅ 修改這裡：直接加總 CartItem 的 subtotal 欄位
+     * 使用方式：$cart->total_amount
      */
-    public function order()
+    public function getTotalAmountAttribute(): float
     {
-        return $this->hasOne(Order::class, 'cart_id', 'cart_id');
-    }
-
-    /**
-     * 計算購物車總金額
-     */
-    public function getTotalAttribute(): float
-    {
-        return $this->items->sum('subtotal');
+        // 因為 CartItem 已經幫我們算好 subtotal 了，這裡直接 sum 即可
+        return (float) $this->items->sum('subtotal');
     }
 }
-

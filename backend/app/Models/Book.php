@@ -12,7 +12,7 @@ class Book extends Model
     protected $primaryKey = 'book_id';
     protected $table = 'books';
 
-    // ✅ [修正1] 開啟時間戳記，這樣首頁才能用「最新上架」排序
+    // ✅ 開啟時間戳記
     public $timestamps = true;
 
     protected $fillable = [
@@ -29,9 +29,8 @@ class Book extends Model
         'business_id',
         'stock',
         'listing',
-        'user_id', // ✅ [修正2] 加入 user_id，允許寫入賣家 ID
-        'created_at', // 保險起見也可以加上去
-        'updated_at',
+        'user_id',
+        // 'image_url', // 注意：如果你的 books 表沒有這個欄位，這裡不要加，圖片是存在 images 表
     ];
 
     protected function casts(): array
@@ -41,6 +40,12 @@ class Book extends Model
             'price' => 'decimal:2',
             'listing' => 'boolean',
         ];
+    }
+
+    // 關聯：賣家 (User) - 建議補上這個，方便以後查詢 "這本書是誰賣的"
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function author()
@@ -60,18 +65,19 @@ class Book extends Model
 
     public function images()
     {
-        // 這裡如果你確定資料表有 image_index 就保留，沒有的話建議拿掉 orderBy
         return $this->hasMany(Image::class, 'book_id', 'book_id');
     }
 
     /**
-     * 取得書籍的封面圖片
+     * 取得書籍的封面圖片 (修復首頁 500 錯誤的關鍵)
      */
     public function coverImage()
     {
-        // ✅ [修正3] 配合 Controller 的寫法，改成找 'is_cover' 為 true 的圖片
-        // 原本的 image_index 可能不存在於資料庫，導致 500 錯誤
-        return $this->hasOne(Image::class, 'book_id', 'book_id')->where('is_cover', true);
+        return $this->hasOne(Image::class, 'book_id', 'book_id')
+                    ->where('is_cover', true)
+                    // 修正：不要用 latest()，因為資料庫可能沒有 created_at
+                    // 改用 ID 排序，或是直接不排序
+                    ->orderByDesc('image_id'); 
     }
 
     public function reviews()
@@ -79,6 +85,7 @@ class Book extends Model
         return $this->hasMany(Review::class, 'book_id', 'book_id');
     }
 
+    // ✅ 訂單明細
     public function orderDetails()
     {
         return $this->hasMany(OrderDetail::class, 'book_id', 'book_id');

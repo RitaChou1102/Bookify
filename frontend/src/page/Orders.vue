@@ -57,14 +57,16 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const data = await getOrders()
-    orders.value = data
+    const res = await getOrders();
+    // 🔍 修正點：通常資料在 res.data 中，如果是 Laravel API 可能還有 res.data.data
+    console.log("API 原始回傳:", res); // 先打開 F12 看看 console
+    orders.value = res.data || res; 
   } catch (err) {
-    console.error("載入訂單失敗", err)
+    console.error("載入訂單失敗", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 function viewOrder(id) {
   // 注意：這裡使用 id 作為參數，路由請確保是 /orders/:id

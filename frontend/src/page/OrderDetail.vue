@@ -26,13 +26,14 @@
 
       <el-card>
         <h3>購買商品</h3>
-        <el-table :data="order.details" style="width: 100%">
+        <el-table :data="order.order_details" style="width: 100%">
           <el-table-column label="商品資訊">
             <template #default="scope">
               <div class="item-info">
                 <img 
-                  :src="scope.row.book.cover_image ? scope.row.book.cover_image.image_url : 'https://via.placeholder.com/50'" 
+                  :src="scope.row.book?.cover_image?.image_url || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'" 
                   class="item-thumb"
+                  @error="(e) => e.target.src = 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'"
                 />
                 <div>
                   <div class="item-name">{{ scope.row.book.name }}</div>

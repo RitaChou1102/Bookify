@@ -28,20 +28,25 @@
         </div>
 
         <div v-else class="user-menu">
-          <el-button type="success" plain @click="router.push('/product/upload')" class="sell-btn">
-            <el-icon><Plus /></el-icon> 我要賣書
-          </el-button>
-
+          
           <el-dropdown @command="handleCommand">
             <span class="el-dropdown-link user-profile">
               <el-avatar :size="32" :src="userAvatar" />
               <span class="username">{{ userName }}</span>
-              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">個人資料</el-dropdown-item>
                 <el-dropdown-item command="orders">歷史訂單</el-dropdown-item>
+                
+                <el-dropdown-item v-if="currentUser?.business" command="sell" divided>
+                  <el-icon><Plus /></el-icon> 我要賣書
+                </el-dropdown-item>
+                <el-dropdown-item v-else command="register-vendor" divided>
+                  成為賣家
+                </el-dropdown-item>
+
                 <el-dropdown-item divided command="logout">登出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -53,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ShoppingCart, ArrowDown, Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -63,6 +68,7 @@ const keyword = ref('')
 const isLoggedIn = ref(false)
 const userName = ref('')
 const userAvatar = ref('')
+const currentUser = ref(null)
 
 // 檢查登入狀態
 const checkLoginStatus = () => {
@@ -72,18 +78,17 @@ const checkLoginStatus = () => {
   if (token && userStr) {
     isLoggedIn.value = true
     const user = JSON.parse(userStr)
+    currentUser.value = user
     userName.value = user.name || '會員'
-    // 如果有頭像欄位可顯示，沒有就用預設
     userAvatar.value = user.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
   } else {
     isLoggedIn.value = false
+    currentUser.value = null
   }
 }
 
 onMounted(() => {
   checkLoginStatus()
-  
-  // 監聽 storage 變化 (例如登出/登入時更新 UI)
   window.addEventListener('storage', checkLoginStatus)
 })
 
@@ -98,12 +103,19 @@ const handleCommand = (command) => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     isLoggedIn.value = false
+    currentUser.value = null
     ElMessage.success('已登出')
     router.push('/login')
   } else if (command === 'profile') {
     router.push('/user/profile')
   } else if (command === 'orders') {
     router.push('/orders')
+  } else if (command === 'sell') {
+    // 🟢 賣家點選單裡的「我要賣書」
+    router.push('/product/upload')
+  } else if (command === 'register-vendor') {
+    // 🟢 一般人點「成為賣家」
+    router.push('/vendor/register')
   }
 }
 </script>
@@ -158,8 +170,5 @@ const handleCommand = (command) => {
 .username {
   margin: 0 8px;
   font-size: 14px;
-}
-.sell-btn {
-  font-weight: bold;
 }
 </style>

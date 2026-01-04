@@ -84,7 +84,7 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::put('/user/password', [\App\Http\Controllers\UserController::class, 'changePassword']);
 
-    Route::get('/cart', [CartController::class, 'show']);
+    Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/items', [CartController::class, 'addItem']);
     Route::put('/cart/items/{id}', [CartController::class, 'updateItem']);
     Route::delete('/cart/items/{id}', [CartController::class, 'removeItem']);
@@ -118,6 +118,9 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
     Route::patch('/images/reorder', [ImageController::class, 'reorder']);
     Route::get('/user/profile', [UserController::class, 'show']);
     Route::put('/user/profile', [UserController::class, 'update']);
+
+    Route::get('/my-books', [BookController::class, 'myBooks']);
+    Route::put('/books/{id}', [BookController::class, 'update']);
 });
 
 // 3. 後台管理員受保護 API

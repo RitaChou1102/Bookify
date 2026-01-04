@@ -42,15 +42,19 @@
           <h3>訂單摘要</h3>
           
           <div v-if="cartItems.length > 0" class="order-items">
-            <div v-for="item in cartItems" :key="item.id" class="order-item">
-              <img :src="item.book.cover_image?.image_url || 'https://via.placeholder.com/60'" 
-                   class="item-img" alt="book">
+            <div v-for="item in cartItems" :key="item.cart_item_id" class="order-item">
+              <img 
+                :src="item.book?.cover_image?.image_url || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200'" 
+                class="item-img" 
+              />
               
               <div class="item-info">
-                <div class="item-name">{{ item.book.name }}</div>
+                <div class="item-name">{{ item.book?.name || '未知書籍' }}</div>
                 <div class="item-meta">x {{ item.quantity }}</div>
               </div>
-              <div class="item-price">NT$ {{ Math.floor(item.book.price * item.quantity) }}</div>
+              <div class="item-price">
+                NT$ {{ Math.floor(Number(item.price || item.book?.price || 0) * item.quantity) }}
+              </div>
             </div>
           </div>
           <div v-else class="empty-cart-msg">
@@ -146,11 +150,17 @@ const selectedCoupon = ref(null)
 
 // 4. 計算金額邏輯
 const subtotal = computed(() => {
-  if (!cartItems.value) return 0
+  if (!cartItems.value || cartItems.value.length === 0) return 0;
+  
   return cartItems.value.reduce((sum, item) => {
-    return sum + (Number(item.book.price) * item.quantity)
-  }, 0)
-})
+    // 🔍 修正點：確保從正確的路徑讀取價格 (根據您的 API 回傳結構調整)
+    // 可能是 item.price (快照價) 或 item.book.price (現價)
+    const price = Number(item.price || item.book?.price || 0);
+    const quantity = Number(item.quantity || 0);
+    
+    return sum + (price * quantity);
+  }, 0);
+});
 
 // 計算折扣金額
 const discountAmount = computed(() => {
