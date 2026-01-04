@@ -42,9 +42,9 @@ class OrderController extends Controller
                     'order_status'   => 'Received',
                     'order_time'     => now(),
                     'cart_id'        => $cart->cart_id,
-                    'recipient_name'    => $request->recipient_name,
-                    'recipient_phone'   => $request->recipient_phone,
-                    'recipient_address' => $request->recipient_address,
+                    //'recipient_name'    => $request->recipient_name,
+                    //'recipient_phone'   => $request->recipient_phone,
+                    //'recipient_address' => $request->recipient_address,
                 ]);
 
                 // 搬移明細
