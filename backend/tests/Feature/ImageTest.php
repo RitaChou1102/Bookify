@@ -11,7 +11,9 @@ use App\Models\BookCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Cloudinary\Cloudinary;
+use Cloudinary\Api\Upload\UploadApi;
+use Cloudinary\Api\ApiResponse;
 use Tests\TestCase;
 use Mockery;
 
@@ -62,32 +64,54 @@ class ImageTest extends TestCase
      */
     public function test_business_can_upload_image()
     {
-        // 1. 模擬 Cloudinary 的回傳物件
-        $mockResult = Mockery::mock();
-        $mockResult->shouldReceive('getSecurePath')
-                   ->andReturn('https://res.cloudinary.com/demo/image/upload/sample.jpg');
+        /**
+         * 1. Mock ApiResponse（符合 upload() 回傳型別）
+         */
+        $responseJson = [
+            'secure_url' => 'https://example.com/fake.jpg',
+        ];
 
-        // 2. 告訴 Laravel 當呼叫 Cloudinary::upload 時，回傳上面的假物件
-        Cloudinary::shouldReceive('upload')
+        $headers = []; // 一定要是 array，不能省略
+
+        $apiResponse = new ApiResponse($responseJson, $headers);
+        /**
+         * 2. Mock UploadApi
+         */
+        $mockUploadApi = Mockery::mock(UploadApi::class);
+        $mockUploadApi->shouldReceive('upload')
             ->once()
-            ->andReturn($mockResult);
+            ->andReturn($apiResponse);
 
+        /**
+         * 3. Mock Cloudinary
+         */
+        $mockCloudinary = Mockery::mock(Cloudinary::class);
+        $mockCloudinary->shouldReceive('uploadApi')
+            ->once()
+            ->andReturn($mockUploadApi);
+
+        /**
+         * 4. 注入 Container
+         */
+        $this->app->instance(Cloudinary::class, $mockCloudinary);
         // 3. 準備假圖片檔案
-        $file = UploadedFile::fake()->image('cover.jpg');
+        $file = UploadedFile::fake()->create('cover.jpg', 100, 'image/jpeg');
 
-        // 4. 發送請求
+        $this->withoutExceptionHandling();
+
+        // 5. 發送請求
         $response = $this->withHeaders(['Authorization' => 'Bearer ' . $this->businessToken])
                          ->postJson("/api/books/{$this->book->book_id}/images", [
                              'image' => $file
                          ]);
 
-        // 5. 驗證
+        // 6. 驗證
         $response->assertStatus(201)
                  ->assertJson(['message' => '上傳成功']);
 
         $this->assertDatabaseHas('images', [
             'book_id' => $this->book->book_id,
-            'image_url' => 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+            'image_url' => 'https://example.com/fake.jpg',
             'image_index' => 1 // 第一張圖 index 應為 1
         ]);
     }
