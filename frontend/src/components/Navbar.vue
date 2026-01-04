@@ -38,11 +38,21 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">個人資料</el-dropdown-item>
-                <el-dropdown-item command="orders">歷史訂單</el-dropdown-item>
+                <el-dropdown-item command="orders">歷史訂單 (買家)</el-dropdown-item>
                 
-                <el-dropdown-item v-if="currentUser?.business" command="sell" divided>
-                  <el-icon><Plus /></el-icon> 我要賣書
-                </el-dropdown-item>
+                <template v-if="currentUser?.business">
+                  <el-dropdown-item command="vendor-products" divided>
+                    <el-icon><Goods /></el-icon> 我的賣場 (商品管理)
+                  </el-dropdown-item>
+
+                  <el-dropdown-item command="vendor-orders">
+                    <el-icon><List /></el-icon> 銷售紀錄
+                  </el-dropdown-item>
+                  <el-dropdown-item command="sell">
+                    <el-icon><Plus /></el-icon> 我要賣書
+                  </el-dropdown-item>
+                </template>
+
                 <el-dropdown-item v-else command="register-vendor" divided>
                   成為賣家
                 </el-dropdown-item>
@@ -60,7 +70,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ShoppingCart, ArrowDown, Plus } from '@element-plus/icons-vue'
+// 🟢 [新增] 引入 Goods 圖標
+import { ShoppingCart, ArrowDown, Plus, List, Goods } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -109,12 +120,15 @@ const handleCommand = (command) => {
   } else if (command === 'profile') {
     router.push('/user/profile')
   } else if (command === 'orders') {
-    router.push('/orders')
+    router.push('/orders') 
+  } else if (command === 'vendor-products') {
+    // 🟢 [新增] 跳轉到商品管理頁面
+    router.push('/vendor/products')
+  } else if (command === 'vendor-orders') {
+    router.push('/vendor/orders') 
   } else if (command === 'sell') {
-    // 🟢 賣家點選單裡的「我要賣書」
     router.push('/product/upload')
   } else if (command === 'register-vendor') {
-    // 🟢 一般人點「成為賣家」
     router.push('/vendor/register')
   }
 }

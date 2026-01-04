@@ -121,6 +121,8 @@ Route::middleware(['auth:sanctum', 'check.blacklist'])->group(function () {
 
     Route::get('/my-books', [BookController::class, 'myBooks']);
     Route::put('/books/{id}', [BookController::class, 'update']);
+    Route::get('/vendor/orders', [\App\Http\Controllers\OrderController::class, 'sellerSales']);
+    Route::post('/vendor/register', [\App\Http\Controllers\AuthController::class, 'registerVendor']);
 });
 
 // 3. 後台管理員受保護 API

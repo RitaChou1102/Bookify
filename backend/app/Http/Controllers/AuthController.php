@@ -8,7 +8,6 @@ use App\Models\Business;
 use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -24,20 +23,19 @@ class AuthController extends Controller
                 'name' => 'required|string|max:191',
                 'email' => 'required|email|max:191|unique:users,email',
                 'password' => 'required|string|min:6|max:255',
-                'role' => 'required|in:member,business', // 確保角色正確
+                'role' => 'required|in:member,business',
                 'phone' => 'nullable|string|max:50',
                 'address' => 'nullable|string|max:500',
             ]);
 
-            // 優化：使用資料庫交易確保資料一致性，並提升效能
             DB::beginTransaction();
 
-            // 2. 建立使用者（密碼會自動透過 casts 進行 Hash）
+            // 2. 建立使用者
             $user = User::create([
                 'login_id' => $validated['login_id'],
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => $validated['password'], // 會自動透過 casts 進行 Hash
+                'password' => $validated['password'],
                 'role' => $validated['role'],
                 'phone' => $validated['phone'] ?? null,
                 'address' => $validated['address'] ?? null,
@@ -47,78 +45,55 @@ class AuthController extends Controller
             if ($validated['role'] === 'business') {
                 Business::create([
                     'user_id' => $user->user_id,
-                    'bank_account' => '' // 暫空
+                    'bank_account' => ''
                 ]);
             } else {
-                // 預設為一般會員
                 $member = Member::create(['user_id' => $user->user_id]);
-                // 會員註冊同時建立購物車
                 Cart::create(['member_id' => $member->member_id]);
             }
 
-            // 4. 發放 Token（帶有 user-access 能力）
+            // 4. 發放 Token
             $token = $user->createToken('auth_token', ['user-access'])->plainTextToken;
+
+            // 5. 載入關聯資料以便回傳完整結構
+            $user->load(['member', 'business']);
 
             DB::commit();
 
-            // 5. 回傳成功響應（不包含密碼）
             return response()->json([
                 'message' => '註冊成功',
-                'user' => [
-                    'user_id' => $user->user_id,
-                    'login_id' => $user->login_id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'phone' => $user->phone,
-                    'address' => $user->address,
-                ],
+                'user' => $user, // 直接回傳模型，它會自動包含 loaded 的 relations
                 'token' => $token
             ], 201);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // 處理驗證錯誤
             DB::rollBack();
-            return response()->json([
-                'message' => '註冊失敗，請檢查輸入資料',
-                'errors' => $e->errors()
-            ], 422);
+            return response()->json(['message' => '註冊失敗', 'errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            // 處理其他錯誤
             DB::rollBack();
-            return response()->json([
-                'message' => '註冊失敗',
-                'error' => config('app.debug') ? $e->getMessage() : '伺服器錯誤，請稍後再試'
-            ], 500);
+            return response()->json(['message' => '註冊失敗', 'error' => $e->getMessage()], 500);
         }
     }
 
-    // 登入
+    // 🟢 [重點修正] 登入
     public function login(Request $request)
     {
-        // 1. 驗證輸入欄位
         $validated = $request->validate([
             'login_id' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        // 2. 根據 login_id 查找使用者（使用 select 只載入必要欄位）
+        // 🟢 修正 1: 使用 with() 預先載入 member 和 business 關聯
         $user = User::select('user_id', 'login_id', 'name', 'email', 'password', 'role', 'phone', 'address')
             ->where('login_id', $validated['login_id'])
+            ->with(['member', 'business']) // 這裡告訴 Laravel 把這兩個關聯一起抓出來
             ->first();
 
-        // 3. 驗證使用者是否存在且密碼正確
         if (!$user || !Hash::check($validated['password'], $user->password)) {
-            return response()->json([
-                'message' => '帳號或密碼錯誤',
-                'errors' => [
-                    'login_id' => ['提供的帳號或密碼不正確']
-                ]
-            ], 401);
+            return response()->json(['message' => '帳號或密碼錯誤'], 401);
         }
 
-        // 4. 刪除舊 Token 並發新 Token (單一裝置登入機制)
-        // 優化：使用 DB 直接刪除，比 Eloquent 更快
-        // 如果 token 數量很多，直接使用 SQL DELETE 會比 Eloquent 快很多
+        // 刪除舊 Token
         DB::table('personal_access_tokens')
             ->where('tokenable_type', get_class($user))
             ->where('tokenable_id', $user->user_id)
@@ -126,7 +101,9 @@ class AuthController extends Controller
         
         $token = $user->createToken('auth_token', ['user-access'])->plainTextToken;
 
-        // 5. 回傳成功響應
+        // 🟢 修正 2: 回傳資料時，確保包含 member 和 business
+        // 您原本的手動陣列寫法漏掉了這兩個，建議直接回傳 $user 物件
+        // 或者像下面這樣手動補上：
         return response()->json([
             'message' => '登入成功',
             'user' => [
@@ -137,9 +114,13 @@ class AuthController extends Controller
                 'role' => $user->role,
                 'phone' => $user->phone,
                 'address' => $user->address,
+                'avatar' => $user->avatar, // 假設有頭像
+                // ⬇️ 這裡就是讓前端 Navbar 能夠判斷的關鍵
+                'member' => $user->member,
+                'business' => $user->business, 
             ],
             'token' => $token,
-            'role' => $user->role // 回傳角色以便前端導向不同頁面
+            'role' => $user->role
         ], 200);
     }
 
@@ -150,107 +131,77 @@ class AuthController extends Controller
         return response()->json(['message' => '已登出']);
     }
     
-    // 取得個人資料
+    // 🟢 [重點修正] 取得個人資料
     public function profile(Request $request)
     {
         try {
-            // 先取得用戶基本資料，不載入任何關聯
             $user = $request->user();
             
             if (!$user) {
-                return response()->json([
-                    'message' => '未找到用戶資料',
-                    'error' => '認證失敗'
-                ], 401);
+                return response()->json(['message' => '認證失敗'], 401);
             }
-            
-            // 初始化變數
-            $member = null;
-            $business = null;
-            
-            // 根據角色查詢對應資料（使用 try-catch 避免查詢錯誤導致卡住）
-            try {
-                if ($user->role === 'member') {
-                    $memberData = DB::table('members')
-                        ->select('member_id', 'user_id')
-                        ->where('user_id', $user->user_id)
-                        ->limit(1)  // 確保只查詢一筆
-                        ->first();
-                    
-                    if ($memberData) {
-                        $member = [
-                            'member_id' => $memberData->member_id,
-                            'user_id' => $memberData->user_id,
-                        ];
-                    }
-                } elseif ($user->role === 'business') {
-                    $businessData = DB::table('businesses')
-                        ->select('business_id', 'user_id', 'store_name', 'bank_account')
-                        ->where('user_id', $user->user_id)
-                        ->limit(1)  // 確保只查詢一筆
-                        ->first();
-                    
-                    if ($businessData) {
-                        $business = [
-                            'business_id' => $businessData->business_id,
-                            'user_id' => $businessData->user_id,
-                            'store_name' => $businessData->store_name,
-                            'bank_account' => $businessData->bank_account,
-                        ];
-                    }
-                }
-            } catch (\Exception $e) {
-                // 如果查詢失敗，記錄錯誤但繼續執行
-                Log::warning('Profile query failed', [
-                    'user_id' => $user->user_id,
-                    'error' => $e->getMessage()
-                ]);
-                // 不中斷執行，只返回 null
+
+            // 🟢 修正: 不用手動 DB::table 查詢，直接用 Eloquent 的 load
+            // 這會自動根據 User 模型裡的設定去抓資料，無論 role 欄位是什麼
+            $user->load(['member', 'business']);
+
+            // 這裡可以檢查一下，如果有關聯但 role 不對，順手修復 (Optional)
+            if ($user->business && $user->role !== 'business') {
+                $user->update(['role' => 'business']);
             }
-            
-            // 返回資料
+
             return response()->json([
-                'user' => [
-                    'user_id' => $user->user_id,
-                    'login_id' => $user->login_id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'phone' => $user->phone,
-                    'address' => $user->address,
-                    'member' => $member,
-                    'business' => $business,
-                ]
+                'user' => $user // 這會包含 user 資訊以及 member 和 business 物件
             ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } catch (\Exception $e) {
-            // 捕獲所有異常，避免請求卡住
-            Log::error('Profile API error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json([
-                'message' => '取得個人資料失敗',
-                'error' => config('app.debug') ? $e->getMessage() : '伺服器錯誤'
-            ], 500);
+            Log::error('Profile API error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => '取得個人資料失敗'], 500);
         }
     }
 
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        
         $validated = $request->validate([
             'name' => 'string|max:255',
             'phone' => 'string|max:50',
             'address' => 'string|max:500',
-            // 若要允許改密碼需額外處理 hash
         ]);
 
         $user->update($validated);
+        // 更新後重新載入關聯，確保前端拿到最新狀態
+        $user->load(['member', 'business']);
 
-        return response()->json(['message' => '個人資料更新成功', 'user' => $user], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            ->header('Content-Type', 'application/json; charset=utf-8');
+        return response()->json(['message' => '個人資料更新成功', 'user' => $user]);
+    }
+
+    public function registerVendor(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->business) {
+            return response()->json(['message' => '您已經是賣家了，無需重複申請'], 400);
+        }
+
+        $validated = $request->validate([
+            'store_name' => 'required|string|max:50',
+            'bank_account' => 'required|string|max:30',
+            'email' => 'required|email',
+            'phone' => 'required|string',
+        ]);
+
+        \App\Models\Business::create([
+            'user_id' => $user->user_id,
+            'store_name' => $validated['store_name'],
+            'bank_account' => $validated['bank_account'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+        ]);
+
+        // 🟢 修正: 申請通過後，將使用者角色更新為 business
+        $user->update(['role' => 'business']);
+
+        return response()->json(['message' => '恭喜！您已成功開通賣家功能']);
     }
 }

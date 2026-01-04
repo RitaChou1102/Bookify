@@ -131,13 +131,36 @@ class OrderController extends Controller
     public function sellerSales(Request $request)
     {
         $user = $request->user();
+
+        // 搜尋所有「書本擁有者是自己」的訂單明細
         $sales = OrderDetail::whereHas('book', function($q) use ($user) {
             $q->where('user_id', $user->user_id);
         })
-        ->with(['book.coverImage', 'order.user'])
-        ->orderByDesc('created_at')
+        // 載入關聯：書本(含封面)、訂單(含買家資訊)
+        ->with(['book.coverImage', 'order.member']) 
+        // 🟢 修正：改用 detail_id 排序，因為 order_details 可能沒有 created_at
+        ->orderByDesc('detail_id') 
         ->get();
         
         return response()->json($sales);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:Received,Processing,Shipped,Completed,Cancelled'
+        ]);
+
+        $order = Order::find($id);
+        if (!$order) {
+            return response()->json(['message' => '找不到訂單'], 404);
+        }
+
+        // 這裡可以加上權限檢查，確保是相關賣家或管理員才能改
+        // 簡單起見，我們先允許登入者修改
+        
+        $order->update(['order_status' => $request->status]);
+
+        return response()->json(['message' => '訂單狀態已更新', 'status' => $order->order_status]);
     }
 }

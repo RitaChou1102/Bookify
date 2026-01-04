@@ -19,6 +19,7 @@ import AdminComplaints from '../page/AdminComplaints.vue'
 import Search from '../page/Search.vue'
 import MyBooks from '../components/MyBooks.vue'
 import EditBook from '../components/EditBook.vue'
+import VendorRegister from '../page/VendorRegister.vue'
 
 
 const router = createRouter({
@@ -137,6 +138,12 @@ const router = createRouter({
       path: '/book/edit/:id', // :id 代表這是變數
       name: 'edit-book',
       component: EditBook
+    },
+    { 
+      path: '/vendor/register', 
+      name: 'vendor-register', 
+      component: VendorRegister,
+      meta: { requiresAuth: true }
     }
   ]
 })

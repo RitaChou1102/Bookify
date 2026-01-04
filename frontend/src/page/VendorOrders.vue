@@ -1,5 +1,5 @@
 <template>
-  <div class="vendor-orders-container">
+  <div class="vendor-orders-container" v-loading="loading">
     <div class="page-header">
       <div class="title-section">
         <h1>廠商訂單管理</h1>
@@ -7,9 +7,9 @@
       </div>
       <el-radio-group v-model="filterStatus" size="large">
         <el-radio-button label="all" value="all">全部</el-radio-button>
-        <el-radio-button label="pending" value="pending">待出貨</el-radio-button>
-        <el-radio-button label="shipped" value="shipped">已出貨</el-radio-button>
-        <el-radio-button label="completed" value="completed">已完成</el-radio-button>
+        <el-radio-button label="Received" value="Received">待出貨</el-radio-button>
+        <el-radio-button label="Shipped" value="Shipped">已出貨</el-radio-button>
+        <el-radio-button label="Completed" value="Completed">已完成</el-radio-button>
       </el-radio-group>
     </div>
 
@@ -25,25 +25,31 @@
               
               <el-divider />
               
-              <h3>購買商品</h3>
+              <h3>購買商品 (本賣場)</h3>
               <ul>
-                <li v-for="item in props.row.items" :key="item.id">
-                  {{ item.name }} x {{ item.quantity }} (單價: ${{ item.price }})
+                <li v-for="item in props.row.items" :key="item.detail_id">
+                  {{ item.book?.name }} x {{ item.quantity }} (單價: NT$ {{ Math.floor(item.piece_price) }})
                 </li>
               </ul>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="id" label="訂單編號" width="120" />
-        <el-table-column prop="date" label="下單日期" width="180" />
-        <el-table-column prop="total" label="訂單金額" width="120">
+        <el-table-column prop="id" label="訂單編號" width="100" align="center">
+            <template #default="scope">#{{ scope.row.id }}</template>
+        </el-table-column>
+        
+        <el-table-column prop="date" label="下單日期" width="180">
+             <template #default="scope">{{ formatDate(scope.row.date) }}</template>
+        </el-table-column>
+
+        <el-table-column prop="total" label="本單營收" width="120">
           <template #default="scope">
-            NT$ {{ scope.row.total }}
+            <span class="price-text">NT$ {{ Math.floor(scope.row.total) }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="狀態" width="120">
+        <el-table-column prop="status" label="狀態" width="120" align="center">
           <template #default="scope">
             <el-tag :type="getStatusType(scope.row.status)">
               {{ getStatusText(scope.row.status) }}
@@ -54,7 +60,7 @@
         <el-table-column label="操作" min-width="150">
           <template #default="scope">
             <el-button 
-              v-if="scope.row.status === 'pending'"
+              v-if="scope.row.status === 'Received'"
               type="primary" 
               size="small" 
               @click="handleShip(scope.row)"
@@ -66,56 +72,98 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <div v-if="!loading && orders.length === 0" class="empty-state">
+        <el-empty description="目前沒有訂單資料" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const filterStatus = ref('all')
+const orders = ref([])
+const loading = ref(false)
 
-// 模擬訂單資料 (未來從 API GET /api/vendor/orders 取得)
-const orders = ref([
-  {
-    id: 'ORD-001',
-    date: '2025-12-08 14:30',
-    total: 630,
-    status: 'pending', // 待出貨
-    customerName: '王小明',
-    customerPhone: '0912-345-678',
-    customerAddress: '台北市信義區信義路五段7號',
-    items: [
-      { id: 1, name: '被討厭的勇氣', price: 300, quantity: 1 },
-      { id: 2, name: '原子習慣', price: 330, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD-002',
-    date: '2025-12-07 09:15',
-    total: 350,
-    status: 'shipped', // 已出貨
-    customerName: '陳大文',
-    customerPhone: '0988-777-666',
-    customerAddress: '台中市西屯區台灣大道三段',
-    items: [
-      { id: 3, name: '底層邏輯', price: 350, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD-003',
-    date: '2025-12-06 18:20',
-    total: 1200,
-    status: 'completed', // 已完成
-    customerName: '李雅婷',
-    customerPhone: '0955-444-333',
-    customerAddress: '高雄市左營區博愛二路',
-    items: [
-      { id: 1, name: '被討厭的勇氣', price: 300, quantity: 4 }
-    ]
+// 1. 從後端撈取資料
+const fetchOrders = async () => {
+  loading.value = true
+  try {
+    const token = localStorage.getItem('token')
+    // 呼叫我們之前寫好的 sellerSales API
+    const res = await axios.get('http://localhost:8000/api/vendor/orders', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    // 轉換資料結構
+    orders.value = transformData(res.data)
+
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('無法載入訂單資料')
+  } finally {
+    loading.value = false
   }
-])
+}
 
-// 根據篩選器顯示訂單
+// 2. [關鍵] 資料轉換函式：把扁平的銷售紀錄 Group 成訂單
+const transformData = (flatSales) => {
+  const groups = {}
+
+  flatSales.forEach(sale => {
+    const orderId = sale.order_id
+    
+    // 如果這張訂單還沒被建立過，就初始化
+    if (!groups[orderId]) {
+      groups[orderId] = {
+        id: orderId,
+        date: sale.order?.order_time,
+        status: sale.order?.order_status,
+        customerName: sale.order?.member?.name || sale.order?.recipient_name || '未知',
+        customerPhone: sale.order?.member?.phone || sale.order?.recipient_phone || '無',
+        customerAddress: sale.order?.recipient_address || '無',
+        items: [],
+        total: 0 // 計算屬於"這個賣家"的總金額
+      }
+    }
+
+    // 把書本加入這張訂單的 items 列表
+    groups[orderId].items.push(sale)
+    // 累加金額
+    groups[orderId].total += (Number(sale.piece_price) * sale.quantity)
+  })
+
+  // 把物件轉回陣列 (Array) 並依照時間排序
+  return Object.values(groups).sort((a, b) => new Date(b.date) - new Date(a.date))
+}
+
+// 3. 處理出貨
+const handleShip = (order) => {
+  ElMessageBox.confirm(
+    `確定要將訂單 #${order.id} 標記為已出貨嗎？`,
+    '出貨確認',
+    { confirmButtonText: '確定出貨', cancelButtonText: '取消', type: 'warning' }
+  ).then(async () => {
+    try {
+      const token = localStorage.getItem('token')
+      await axios.put(`http://localhost:8000/api/orders/${order.id}/status`, 
+        { status: 'Shipped' },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      )
+      
+      ElMessage.success('訂單已更新為「已出貨」！')
+      order.status = 'Shipped' // 前端即時更新顯示
+    } catch (err) {
+      console.error(err)
+      ElMessage.error('更新失敗')
+    }
+  }).catch(() => {})
+}
+
+// 4. 篩選邏輯
 const filteredOrders = computed(() => {
   if (filterStatus.value === 'all') {
     return orders.value
@@ -123,56 +171,32 @@ const filteredOrders = computed(() => {
   return orders.value.filter(order => order.status === filterStatus.value)
 })
 
-// 狀態顯示輔助函式
-const getStatusType = (status) => {
-  const map = {
-    pending: 'warning',
-    shipped: 'primary',
-    completed: 'success',
-    cancelled: 'info'
-  }
-  return map[status] || 'info'
+// 工具函式
+const formatDate = (d) => d ? new Date(d).toLocaleString() : '-'
+const getStatusType = (s) => {
+  const map = { 'Received': 'warning', 'Processing': 'primary', 'Shipped': 'success', 'Completed': 'success', 'Cancelled': 'info' }
+  return map[s] || 'info'
+}
+const getStatusText = (s) => {
+  const map = { 'Received': '待出貨', 'Processing': '處理中', 'Shipped': '已出貨', 'Completed': '已完成', 'Cancelled': '已取消' }
+  return map[s] || s
 }
 
-const getStatusText = (status) => {
-  const map = {
-    pending: '待出貨',
-    shipped: '已出貨',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
-  return map[status] || status
-}
-
-// 處理出貨動作
-const handleShip = (order) => {
-  if (confirm(`確定要將訂單 ${order.id} 標記為已出貨嗎？`)) {
-    // 呼叫 API 更新狀態 (POST /api/vendor/orders/ship)
-    console.log('出貨訂單:', order.id)
-    order.status = 'shipped'
-    alert('訂單已更新為「已出貨」！')
-  }
-}
+onMounted(() => {
+  fetchOrders()
+})
 </script>
 
 <style scoped>
-.vendor-orders-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px;
-}
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-  gap: 20px;
-}
+.vendor-orders-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 20px; }
 .title-section h1 { margin: 0; color: #333; }
 .title-section p { color: #666; margin: 5px 0 0; }
 .table-card { border-radius: 8px; }
-.order-detail { padding: 10px 20px; background-color: #f9fafb; border-radius: 4px; }
-.order-detail p { margin: 5px 0; color: #555; }
+.order-detail { padding: 15px 25px; background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #409EFF; }
+.order-detail p { margin: 8px 0; color: #555; font-size: 14px; }
+.order-detail h3 { margin-top: 0; color: #303133; font-size: 16px; }
+.price-text { color: #f56c6c; font-weight: bold; }
 .text-gray { color: #999; font-size: 0.9rem; }
+.empty-state { text-align: center; margin-top: 50px; }
 </style>
