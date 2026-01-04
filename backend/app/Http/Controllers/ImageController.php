@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 use App\Models\Image;
 use App\Models\Book;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Cloudinary\Cloudinary;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ImageController extends Controller
 {
+    protected Cloudinary $cloudinary;
+    public function __construct(Cloudinary $cloudinary)
+    {
+        $this->cloudinary = $cloudinary;
+    }
     /**
      * Business 上傳書籍圖片
      */
@@ -25,12 +30,13 @@ class ImageController extends Controller
         $request->validate([
             'image' => 'required|image|max:5120',
         ]);
-        $result = Cloudinary::upload($request->file('image')->getRealPath(), [
-            'folder' => "books/business_{$book->business_id}/book_{$book_id}",
-        ]);
+
+        $result = $this->cloudinary
+                              ->uploadApi()
+                              ->upload($request->file('image')->getRealPath());
         $image = Image::create([
             'book_id' => $book_id,
-            'image_url' => $result->getSecurePath(),
+            'image_url' => $result['secure_url'],
             'image_index' => Image::where('book_id', $book_id)->max('image_index') + 1,
         ]);
         return response()->json(['message' => '上傳成功', 'data' => $image], 201);
