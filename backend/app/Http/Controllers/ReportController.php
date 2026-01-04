@@ -15,7 +15,7 @@ class ReportController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Report::with('admin:admin_id,username');
+        $query = Report::with('admin:admin_id,name');
 
         // 篩選：利用 Enum 進行類型篩選
         if ($request->has('type')) {
@@ -103,7 +103,7 @@ class ReportController extends Controller
             ReportType::SALES_SUMMARY       => $this->calculateSales($start, $end),
             ReportType::INVENTORY_STATUS    => $this->calculateInventory(),
             ReportType::USER_ACTIVITY       => $this->calculateUserActivity($start, $end),
-            ReportType::COMPLAINT_ANALYSIS  => $this->calculateComplaints($start, $end),
+            ReportType::COMPLAIN_ANALYSIS  => $this->calculateComplains($start, $end),
             default => ['info' => '尚未實作此類型的統計邏輯'],
         };
     }
@@ -112,7 +112,7 @@ class ReportController extends Controller
         // 取得該區間內所有訂單，並關聯優惠券
         $orders = \App\Models\Order::with('coupon')
             ->whereBetween('order_time', [$start, $end])
-            ->where('status', 'Completed') // 假設只計算已完成訂單
+            ->where('order_status', 'Completed') // 假設只計算已完成訂單
             ->get();
         $totalRevenue = $orders->sum(function ($order) {
             $subtotal = $order->total_amount + $order->shipping_fee;
@@ -149,7 +149,7 @@ class ReportController extends Controller
             'generated_at' => now()->toDateTimeString(),
             'details' => $inventory->map(function ($item) {
                 return [
-                    'business' => $item->business->name ?? '未知商家',
+                    'business' => $item->business?->name ?? '未知商家',
                     'condition' => $item->condition,
                     'total_stock'   => (int) $item->total_stock,
                     'total_items'   => (int) $item->total_items,
@@ -223,18 +223,18 @@ class ReportController extends Controller
         ];
     }
 
-    private function calculateComplaints($start, $end){
-        $complaints = \App\Models\Complaint::with(['user:id,username'])
-                ->whereBetween('complaint_time', [$start, $end])
-                ->orderBy('complaint_time', 'desc')
+    private function calculateComplains($start, $end){
+        $complains = \App\Models\Complain::with(['user:id,username'])
+                ->whereBetween('complain_time', [$start, $end])
+                ->orderBy('complain_time', 'desc')
                 ->get();
 
         return [
-            'total_complaints' => $complaints->count(),
-            'list' => $complaints->map(function ($c) {
+            'total_complains' => $complains->count(),
+            'list' => $complains->map(function ($c) {
                 return [
-                    'time' => $c->complaint_time,
-                    'user' => $c->user->username ?? '匿名',
+                    'time' => $c->complain_time,
+                    'user' => $c->user?->username ?? '匿名',
                     'reason' => $c->reason,
                     'status' => $c->status
                 ];

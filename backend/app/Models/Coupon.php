@@ -12,10 +12,9 @@ class Coupon extends Model
     protected $primaryKey = 'coupon_id';
     protected $table = 'coupons';
 
-    // 🟢 修正 1：這裡只保留一個 timestamps 定義
+    // 🟢 確保這裡只出現一次 $timestamps
     public $timestamps = false;
-
-    // 🟢 修正 2：統一使用 start_time / end_time (配合你的資料庫欄位)
+    
     protected $fillable = [
         'code',
         'discount_type',
