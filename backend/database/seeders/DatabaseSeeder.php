@@ -30,55 +30,70 @@ class DatabaseSeeder extends Seeder
         // 1. 建立使用者（Users）
         // 說明：Users 表是所有角色的基礎，會員、廠商都從這裡開始
         // 注意：根據 schema，users 表沒有 timestamps
-        $adminUser = DB::table('users')->insertGetId([
-            'login_id' => 'admin001',
-            'name' => '系統管理員',
-            'email' => 'admin@bookify.test',
-            'password' => Hash::make('password123'),
-            'phone' => '0912345678',
-            'address' => '台北市信義區市府路1號',
-            'role' => 'member', // 雖然是管理員，但在 users 表中仍標記為 member
-        ]);
+        $adminUser = DB::table('users')->where('login_id', 'admin001')->value('user_id');
+        if (!$adminUser) {
+            $adminUser = DB::table('users')->insertGetId([
+                'login_id' => 'admin001',
+                'name' => '系統管理員',
+                'email' => 'admin@bookify.test',
+                'password' => Hash::make('password123'),
+                'phone' => '0912345678',
+                'address' => '台北市信義區市府路1號',
+                'role' => 'member', // 雖然是管理員，但在 users 表中仍標記為 member
+            ]);
+        }
 
-        $memberUser1 = DB::table('users')->insertGetId([
-            'login_id' => 'member001',
-            'name' => '張三',
-            'email' => 'member001@bookify.test',
-            'password' => Hash::make('password123'),
-            'phone' => '0911111111',
-            'address' => '台北市中正區重慶南路1段',
-            'role' => 'member',
-        ]);
+        $memberUser1 = DB::table('users')->where('login_id', 'member001')->value('user_id');
+        if (!$memberUser1) {
+            $memberUser1 = DB::table('users')->insertGetId([
+                'login_id' => 'member001',
+                'name' => '張三',
+                'email' => 'member001@bookify.test',
+                'password' => Hash::make('password123'),
+                'phone' => '0911111111',
+                'address' => '台北市中正區重慶南路1段',
+                'role' => 'member',
+            ]);
+        }
 
-        $memberUser2 = DB::table('users')->insertGetId([
-            'login_id' => 'member002',
-            'name' => '李四',
-            'email' => 'member002@bookify.test',
-            'password' => Hash::make('password123'),
-            'phone' => '0922222222',
-            'address' => '新北市板橋區文化路1段',
-            'role' => 'member',
-        ]);
+        $memberUser2 = DB::table('users')->where('login_id', 'member002')->value('user_id');
+        if (!$memberUser2) {
+            $memberUser2 = DB::table('users')->insertGetId([
+                'login_id' => 'member002',
+                'name' => '李四',
+                'email' => 'member002@bookify.test',
+                'password' => Hash::make('password123'),
+                'phone' => '0922222222',
+                'address' => '新北市板橋區文化路1段',
+                'role' => 'member',
+            ]);
+        }
 
-        $businessUser1 = DB::table('users')->insertGetId([
-            'login_id' => 'business001',
-            'name' => '科技書店', // 商店名稱（不是個人名稱）
-            'email' => 'business001@bookify.test',
-            'password' => Hash::make('password123'),
-            'phone' => '0933333333',
-            'address' => '台北市大安區敦化南路1段',
-            'role' => 'business',
-        ]);
+        $businessUser1 = DB::table('users')->where('login_id', 'business001')->value('user_id');
+        if (!$businessUser1) {
+            $businessUser1 = DB::table('users')->insertGetId([
+                'login_id' => 'business001',
+                'name' => '科技書店', // 商店名稱（不是個人名稱）
+                'email' => 'business001@bookify.test',
+                'password' => Hash::make('password123'),
+                'phone' => '0933333333',
+                'address' => '台北市大安區敦化南路1段',
+                'role' => 'business',
+            ]);
+        }
 
-        $businessUser2 = DB::table('users')->insertGetId([
-            'login_id' => 'business002',
-            'name' => '文學書坊', // 商店名稱
-            'email' => 'business002@bookify.test',
-            'password' => Hash::make('password123'),
-            'phone' => '0944444444',
-            'address' => '台北市信義區信義路5段',
-            'role' => 'business',
-        ]);
+        $businessUser2 = DB::table('users')->where('login_id', 'business002')->value('user_id');
+        if (!$businessUser2) {
+            $businessUser2 = DB::table('users')->insertGetId([
+                'login_id' => 'business002',
+                'name' => '文學書坊', // 商店名稱
+                'email' => 'business002@bookify.test',
+                'password' => Hash::make('password123'),
+                'phone' => '0944444444',
+                'address' => '台北市信義區信義路5段',
+                'role' => 'business',
+            ]);
+        }
 
         // 2. 建立管理員（Admins）
         // 說明：管理員是獨立的系統，有自己的登入帳號
@@ -434,6 +449,9 @@ class DatabaseSeeder extends Seeder
                 ]),
             ],
         ]);
+
+        // 呼叫額外的種子檔（新增的 ExtendedSeeder）
+        $this->call(\Database\Seeders\ExtendedSeeder::class);
 
         $this->command->info('資料庫種子資料建立完成！');
         $this->command->info('管理員帳號：admin / admin123');
