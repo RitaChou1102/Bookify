@@ -15,13 +15,13 @@ export default defineConfig({
     port: 5173,      // 前端 Port
     proxy: {
       '/api': {
-        target: 'http://localhost:8000', // 指向後端 (Docker Port 8000)
+        target: 'http://backend:8000', // 在 Docker 內使用服務名稱
         changeOrigin: true,
         secure: false,
       },
       // 確保圖片也能正常讀取
       '/storage': {
-        target: 'http://localhost:8000',
+        target: 'http://backend:8000',
         changeOrigin: true,
         secure: false,
       }

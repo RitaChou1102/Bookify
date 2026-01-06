@@ -15,7 +15,7 @@ class BookController extends Controller
     {
         $books = Book::with(['author', 'coverImage'])
                      ->where('listing', true)
-                     ->orderByDesc('created_at')
+                     ->orderByDesc('book_id')
                      ->paginate(20);
         return response()->json($books);
     }

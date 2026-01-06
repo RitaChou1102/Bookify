@@ -12,17 +12,17 @@ class UserController extends Controller
     // 取得個人資料
     public function show(Request $request)
     {
-        // 取得目前登入使用者，並連帶抓取 member 關聯資料
-        $user = $request->user()->load('member');
+        // 取得目前登入使用者
+        $user = $request->user();
         
         return response()->json([
             'id' => $user->user_id,
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role,
-            // 如果 member 存在就回傳，不存在給空字串
-            'phone' => $user->member ? $user->member->phone : '',
-            'address' => $user->member ? $user->member->address : '',
+            // phone 和 address 直接在 users 表中
+            'phone' => $user->phone ?? '',
+            'address' => $user->address ?? '',
             'avatar' => $user->avatar ?? '', // 如果你有做頭像上傳
         ]);
     }
@@ -64,30 +64,19 @@ class UserController extends Controller
         ]);
 
         return DB::transaction(function () use ($user, $validated) {
-            // 2. 更新 User 表 (姓名)
-            $user->update(['name' => $validated['name']]);
-
-            // 3. 更新或建立 Member 表 (電話、地址)
-            // 只有一般會員 (Buyer) 通常才會有 member 資料，但這裡我們寬鬆處理
-            if ($user->role !== 'admin') {
-                $user->member()->updateOrCreate(
-                    ['user_id' => $user->user_id], // 搜尋條件
-                    [
-                        'phone' => $validated['phone'],
-                        'address' => $validated['address']
-                    ] // 更新內容
-                );
-            }
-
-            // 重新載入資料回傳
-            $user->load('member');
+            // 2. 更新 User 表 (姓名、電話、地址都在 users 表)
+            $user->update([
+                'name' => $validated['name'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address']
+            ]);
 
             return response()->json([
                 'message' => '資料更新成功',
                 'user' => [
                     'name' => $user->name,
-                    'phone' => $user->member->phone ?? '',
-                    'address' => $user->member->address ?? '',
+                    'phone' => $user->phone ?? '',
+                    'address' => $user->address ?? '',
                 ]
             ]);
         });

@@ -12,8 +12,8 @@ class Book extends Model
     protected $primaryKey = 'book_id';
     protected $table = 'books';
 
-    // ✅ 開啟時間戳記
-    public $timestamps = true;
+    // ✅ 關閉時間戳記（books 表沒有 created_at/updated_at）
+    public $timestamps = false;
 
     protected $fillable = [
         'name',
@@ -74,10 +74,8 @@ class Book extends Model
     public function coverImage()
     {
         return $this->hasOne(Image::class, 'book_id', 'book_id')
-                    ->where('is_cover', true)
-                    // 修正：不要用 latest()，因為資料庫可能沒有 created_at
-                    // 改用 ID 排序，或是直接不排序
-                    ->orderByDesc('image_id'); 
+                    // 直接取第一張圖片作為封面
+                    ->orderBy('image_index'); 
     }
 
     public function reviews()
